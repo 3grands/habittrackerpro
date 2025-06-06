@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { X, Plus, Minus } from "lucide-react";
+import { isValidText, sanitizeText } from "@/lib/sanitize";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,10 +15,13 @@ import { apiRequest } from "@/lib/queryClient";
 import { HabitLimitModal } from "@/components/habit-limit-modal";
 
 const addHabitSchema = z.object({
-  name: z.string().min(1, "Habit name is required"),
+  name: z.string()
+    .min(1, "Habit name is required")
+    .max(100, "Habit name too long")
+    .refine(value => isValidText(value), "Invalid characters detected"),
   category: z.string().min(1, "Category is required"),
   frequency: z.string().default("daily"),
-  goal: z.number().min(1, "Goal must be at least 1"),
+  goal: z.number().min(1, "Goal must be at least 1").max(1000, "Goal too large"),
   unit: z.string().default("times"),
   reminderTime: z.string().optional(),
 });

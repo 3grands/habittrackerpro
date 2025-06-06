@@ -63,7 +63,7 @@ export function HabitCard({ habit }: HabitCardProps) {
           </button>
           <div>
             <h3 className={`font-semibold text-gray-800 ${habit.isCompletedToday ? "line-through opacity-60" : ""}`}>
-              {habit.name}
+              {sanitizeText(habit.name)}
             </h3>
             <div className="flex items-center space-x-2 text-sm">
               {habit.isCompletedToday ? (
