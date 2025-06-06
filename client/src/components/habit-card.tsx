@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Check } from "lucide-react";
 import { HabitWithProgress } from "@/lib/types";
+import { sanitizeText } from "@/lib/sanitize";
 
 interface HabitCardProps {
   habit: HabitWithProgress;
