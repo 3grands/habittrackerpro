@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { insertHabitSchema, insertHabitCompletionSchema, insertMoodEntrySchema, insertChatMessageSchema } from "@shared/schema";
 import OpenAI from "openai";
 import Stripe from "stripe";
+import { validateAllApiKeys, validateStripeKeys } from "./api-validation";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
@@ -910,6 +911,50 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to get subscription status" });
+    }
+  });
+
+  // API validation endpoint for security checks
+  app.get("/api/validate-keys", async (req, res) => {
+    try {
+      const validation = await validateAllApiKeys();
+      
+      res.json({
+        success: validation.allValid,
+        message: validation.summary,
+        services: validation.results.map(result => ({
+          service: result.service,
+          valid: result.valid,
+          error: result.error || null
+        })),
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.status(500).json({ 
+        success: false,
+        message: "Validation check failed",
+        error: error.message 
+      });
+    }
+  });
+
+  // Stripe-specific validation endpoint
+  app.get("/api/validate-stripe", async (req, res) => {
+    try {
+      const validation = await validateStripeKeys();
+      
+      res.json({
+        success: validation.valid,
+        service: validation.service,
+        message: validation.valid ? "Stripe keys validated successfully" : validation.error,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.status(500).json({ 
+        success: false,
+        message: "Stripe validation failed",
+        error: error.message 
+      });
     }
   });
 

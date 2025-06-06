@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { validateAllApiKeys } from "./api-validation";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +38,22 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Validate API keys on startup for security
+  log("Validating API keys...");
+  const validation = await validateAllApiKeys();
+  
+  if (!validation.allValid) {
+    log(`⚠️  API Key Validation Warning: ${validation.summary}`);
+    validation.results.forEach(result => {
+      if (!result.valid) {
+        log(`   - ${result.service}: ${result.error}`);
+      }
+    });
+    log("Server will start but some features may not work properly.");
+  } else {
+    log(`✅ API validation successful: ${validation.summary}`);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
