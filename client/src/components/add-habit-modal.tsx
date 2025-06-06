@@ -31,7 +31,21 @@ interface AddHabitModalProps {
 
 export function AddHabitModal({ open, onOpenChange }: AddHabitModalProps) {
   const [selectedFrequency, setSelectedFrequency] = useState("daily");
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const queryClient = useQueryClient();
+  
+  // Check habit count and subscription limits
+  const { data: habits } = useQuery({
+    queryKey: ['/api/habits'],
+  });
+  
+  const { data: subscription } = useQuery({
+    queryKey: ['/api/subscription-status'],
+  });
+  
+  const habitCount = Array.isArray(habits) ? habits.length : 0;
+  const maxHabits = subscription?.features?.max_habits || 3;
+  const isAtLimit = habitCount >= maxHabits && (!subscription?.plan || subscription?.plan === "free");
 
   const form = useForm<AddHabitForm>({
     resolver: zodResolver(addHabitSchema),
@@ -58,6 +72,11 @@ export function AddHabitModal({ open, onOpenChange }: AddHabitModalProps) {
   });
 
   const onSubmit = (data: AddHabitForm) => {
+    // Check habit limit before creating
+    if (isAtLimit) {
+      setShowLimitModal(true);
+      return;
+    }
     createHabitMutation.mutate(data);
   };
 
@@ -68,7 +87,8 @@ export function AddHabitModal({ open, onOpenChange }: AddHabitModalProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 bg-white rounded-t-3xl sm:rounded-3xl border-0 max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <DialogHeader className="mb-6">
@@ -232,6 +252,14 @@ export function AddHabitModal({ open, onOpenChange }: AddHabitModalProps) {
           </Form>
         </div>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      
+      <HabitLimitModal 
+        open={showLimitModal}
+        onOpenChange={setShowLimitModal}
+        currentCount={habitCount}
+        maxHabits={maxHabits}
+      />
+    </>
   );
 }
