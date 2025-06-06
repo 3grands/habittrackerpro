@@ -630,6 +630,89 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
     }
   });
 
+  // Quick complete habit endpoint
+  app.post("/api/habits/:id/complete", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const habitId = parseInt(id);
+      const userId = DEFAULT_USER_ID;
+      
+      const habit = await storage.getHabit(habitId);
+      if (!habit) {
+        return res.status(404).json({ message: "Habit not found" });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const existingCompletion = await storage.getHabitCompletionByDate(habitId, today);
+
+      if (existingCompletion?.isCompleted) {
+        return res.json({ 
+          message: `${habit.name} already completed today`,
+          already_completed: true 
+        });
+      }
+
+      if (existingCompletion) {
+        await storage.updateHabitCompletion(existingCompletion.id, {
+          isCompleted: true,
+          progress: habit.goal
+        });
+      } else {
+        await storage.createHabitCompletion({
+          habitId,
+          date: today,
+          isCompleted: true,
+          progress: habit.goal
+        });
+      }
+
+      res.json({ 
+        message: `${habit.name} completed! Great job!`,
+        habit_name: habit.name,
+        streak_continued: true
+      });
+    } catch (error) {
+      console.error("Complete habit error:", error);
+      res.status(500).json({ message: "Failed to complete habit" });
+    }
+  });
+
+  // Undo habit completion endpoint
+  app.post("/api/habits/:id/undo", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const habitId = parseInt(id);
+      
+      const habit = await storage.getHabit(habitId);
+      if (!habit) {
+        return res.status(404).json({ message: "Habit not found" });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const completion = await storage.getHabitCompletionByDate(habitId, today);
+
+      if (!completion?.isCompleted) {
+        return res.json({ 
+          message: `${habit.name} wasn't completed today`,
+          not_completed: true 
+        });
+      }
+
+      await storage.updateHabitCompletion(completion.id, {
+        isCompleted: false,
+        progress: 0
+      });
+
+      res.json({ 
+        message: `${habit.name} completion undone`,
+        habit_name: habit.name
+      });
+    } catch (error) {
+      console.error("Undo habit error:", error);
+      res.status(500).json({ message: "Failed to undo habit completion" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
