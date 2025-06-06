@@ -107,7 +107,7 @@ export default function CoachingPage() {
           </div>
           <div className="space-y-4">
             <p className="leading-relaxed">
-{currentAdvice || (latestTip as any)?.tip || "Based on your recent progress, I notice you're building great momentum! Keep focusing on consistency over perfection. Small daily actions create lasting change."}
+{currentAdvice || (latestTip && 'tip' in latestTip ? latestTip.tip : "Based on your recent progress, I notice you're building great momentum! Keep focusing on consistency over perfection. Small daily actions create lasting change.")}
             </p>
             <div className="flex items-center space-x-2 text-sm opacity-75">
               <Brain className="w-4 h-4" />

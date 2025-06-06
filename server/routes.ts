@@ -346,14 +346,27 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
     }
   });
 
-  // Get today's mood
-  app.get("/api/mood/today", async (req, res) => {
+  // Get mood by date
+  app.get("/api/mood/:date", async (req, res) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const entry = await storage.getMoodEntryByDate(DEFAULT_USER_ID, today);
+      const { date } = req.params;
+      const entry = await storage.getMoodEntryByDate(DEFAULT_USER_ID, date);
       res.json(entry || null);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch today's mood" });
+      res.status(500).json({ message: "Failed to fetch mood entry" });
+    }
+  });
+
+  // Get recent mood entries
+  app.get("/api/mood/recent", async (req, res) => {
+    try {
+      const entries = await storage.getMoodEntries(DEFAULT_USER_ID);
+      const recentEntries = entries
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 7);
+      res.json(recentEntries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch recent mood entries" });
     }
   });
 
@@ -385,6 +398,39 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
       res.status(201).json(reminder);
     } catch (error) {
       res.status(500).json({ message: "Failed to create reminder" });
+    }
+  });
+
+  app.patch("/api/reminders/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      const reminder = await storage.updateReminder(parseInt(id), updates);
+      
+      if (reminder) {
+        res.json(reminder);
+      } else {
+        res.status(404).json({ message: "Reminder not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update reminder" });
+    }
+  });
+
+  app.delete("/api/reminders/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const success = await storage.deleteReminder(parseInt(id));
+      
+      if (success) {
+        res.json({ message: "Reminder deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Reminder not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete reminder" });
     }
   });
 
