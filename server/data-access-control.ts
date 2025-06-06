@@ -53,27 +53,55 @@ const SUSPICIOUS_PATTERNS = {
     /update\s+.*set/i,
     /insert\s+into/i,
     /exec\s*\(/i,
-    /xp_cmdshell/i
+    /xp_cmdshell/i,
+    /;\s*(drop|delete|update|insert|create|alter)/i,
+    /--\s*$/m,
+    /\/\*[\s\S]*?\*\//,
+    /\'\s*(or|and)\s*\'/i,
+    /\'\s*=\s*\'/i
   ],
   xss: [
-    /<script/i,
+    /<script[^>]*>/i,
+    /<\/script>/i,
     /javascript:/i,
     /on\w+\s*=/i,
-    /<iframe/i,
+    /<iframe[^>]*>/i,
     /eval\s*\(/i,
-    /document\.cookie/i
+    /document\.cookie/i,
+    /<img[^>]+src[^>]*javascript:/i,
+    /<object[^>]*>/i,
+    /<embed[^>]*>/i,
+    /expression\s*\(/i,
+    /vbscript:/i,
+    /<link[^>]+href[^>]*javascript:/i
   ],
   pathTraversal: [
     /\.\.\//g,
-    /\.\.\\*/g,
+    /\.\.\\+/g,
     /%2e%2e%2f/i,
-    /%252e%252e%252f/i
+    /%252e%252e%252f/i,
+    /\.\.%2f/i,
+    /\.\.%5c/i,
+    /\.\.\\/g
   ],
   commandInjection: [
-    /;\s*(rm|del|format|shutdown)/i,
-    /\|\s*(nc|netcat|wget|curl)/i,
-    /`.*`/,
-    /\$\(.*\)/
+    /;\s*(rm|del|format|shutdown|reboot|halt)/i,
+    /\|\s*(nc|netcat|wget|curl|cat|ls|ps|kill)/i,
+    /`[^`]*`/,
+    /\$\([^)]*\)/,
+    /&&\s*(rm|del|format)/i,
+    /\|\|\s*(rm|del|format)/i,
+    />\s*\/dev\/null/i,
+    /2>&1/
+  ],
+  noSQLInjection: [
+    /\$where/i,
+    /\$ne/i,
+    /\$gt/i,
+    /\$regex/i,
+    /\$or/i,
+    /\$and/i,
+    /ObjectId\(/i
   ]
 };
 
@@ -145,6 +173,8 @@ function validateRequestIntegrity(req: Request, context: ValidationContext, sens
     headers: req.headers
   });
   
+  console.log(`[Security] Validating request data: ${requestData.substring(0, 200)}...`);
+  
   // SQL injection detection
   for (const pattern of SUSPICIOUS_PATTERNS.sqlInjection) {
     if (pattern.test(requestData)) {
@@ -167,6 +197,19 @@ function validateRequestIntegrity(req: Request, context: ValidationContext, sens
         statusCode: 400,
         message: 'Request contains potentially malicious script content',
         code: 'XSS_DETECTED'
+      };
+    }
+  }
+  
+  // NoSQL injection detection
+  for (const pattern of SUSPICIOUS_PATTERNS.noSQLInjection) {
+    if (pattern.test(requestData)) {
+      console.warn(`NoSQL injection attempt detected: ${req.path} from ${req.ip}`);
+      return {
+        valid: false,
+        statusCode: 400,
+        message: 'Request contains potentially malicious NoSQL patterns',
+        code: 'NOSQL_INJECTION_DETECTED'
       };
     }
   }
