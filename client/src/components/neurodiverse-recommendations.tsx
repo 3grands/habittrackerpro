@@ -233,7 +233,7 @@ export function NeurodiverseRecommendations() {
   };
 
   const isHabitAlreadyCreated = (template: any) => {
-    return currentHabits.some((habit: any) => 
+    return (currentHabits as any[]).some((habit: any) => 
       habit.name.toLowerCase().includes(template.name.toLowerCase()) ||
       template.name.toLowerCase().includes(habit.name.toLowerCase())
     );

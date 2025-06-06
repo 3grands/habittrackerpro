@@ -124,7 +124,7 @@ export function VoiceCommands() {
       const match = text.match(pattern);
       if (match) {
         const habitName = match[1].trim();
-        const matchingHabit = habits.find((habit: any) => 
+        const matchingHabit = (habits as any[]).find((habit: any) => 
           habit.name.toLowerCase().includes(habitName) ||
           habitName.includes(habit.name.toLowerCase())
         );
@@ -137,10 +137,10 @@ export function VoiceCommands() {
           };
         } else {
           // Fuzzy matching for ADHD users who might not remember exact names
-          const similarHabit = habits.find((habit: any) => {
+          const similarHabit = (habits as any[]).find((habit: any) => {
             const habitWords = habit.name.toLowerCase().split(' ');
             const commandWords = habitName.split(' ');
-            return habitWords.some(hw => commandWords.some(cw => 
+            return habitWords.some((hw: string) => commandWords.some((cw: string) => 
               cw.includes(hw) || hw.includes(cw)
             ));
           });
