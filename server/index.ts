@@ -19,6 +19,10 @@ import {
   logDataAccess,
   sanitizeResponse
 } from "./data-access-control";
+import {
+  sanitizeInput,
+  validateInputSafety
+} from "./input-sanitization";
 
 const app = express();
 
@@ -39,8 +43,14 @@ app.use(validateDataAccess);
 app.use(logDataAccess);
 app.use(sanitizeResponse);
 
+// Apply input sanitization and validation before parsing
+app.use(validateInputSafety);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Apply input sanitization after parsing
+app.use(sanitizeInput);
 
 app.use((req, res, next) => {
   const start = Date.now();
