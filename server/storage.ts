@@ -1,9 +1,12 @@
 import { 
-  users, habits, habitCompletions, coachingTips,
+  users, habits, habitCompletions, coachingTips, moodEntries, chatMessages, reminders,
   type User, type InsertUser,
   type Habit, type InsertHabit,
   type HabitCompletion, type InsertHabitCompletion,
-  type CoachingTip, type InsertCoachingTip
+  type CoachingTip, type InsertCoachingTip,
+  type MoodEntry, type InsertMoodEntry,
+  type ChatMessage, type InsertChatMessage,
+  type Reminder, type InsertReminder
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -30,6 +33,23 @@ export interface IStorage {
   // Coaching methods
   getCoachingTips(userId: number): Promise<CoachingTip[]>;
   createCoachingTip(tip: InsertCoachingTip): Promise<CoachingTip>;
+  
+  // Mood tracking methods
+  getMoodEntries(userId: number): Promise<MoodEntry[]>;
+  getMoodEntryByDate(userId: number, date: string): Promise<MoodEntry | undefined>;
+  createMoodEntry(entry: InsertMoodEntry): Promise<MoodEntry>;
+  updateMoodEntry(id: number, updates: Partial<MoodEntry>): Promise<MoodEntry | undefined>;
+  
+  // Chat methods
+  getChatMessages(userId: number): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  
+  // Reminder methods
+  getReminders(userId: number): Promise<Reminder[]>;
+  getRemindersByHabit(habitId: number): Promise<Reminder[]>;
+  createReminder(reminder: InsertReminder): Promise<Reminder>;
+  updateReminder(id: number, updates: Partial<Reminder>): Promise<Reminder | undefined>;
+  deleteReminder(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -133,6 +153,83 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return tip;
   }
+
+  async getMoodEntries(userId: number): Promise<MoodEntry[]> {
+    return await db.select().from(moodEntries).where(eq(moodEntries.userId, userId));
+  }
+
+  async getMoodEntryByDate(userId: number, date: string): Promise<MoodEntry | undefined> {
+    const [entry] = await db
+      .select()
+      .from(moodEntries)
+      .where(and(
+        eq(moodEntries.userId, userId),
+        eq(moodEntries.date, date)
+      ));
+    return entry || undefined;
+  }
+
+  async createMoodEntry(insertEntry: InsertMoodEntry): Promise<MoodEntry> {
+    const [entry] = await db
+      .insert(moodEntries)
+      .values(insertEntry)
+      .returning();
+    return entry;
+  }
+
+  async updateMoodEntry(id: number, updates: Partial<MoodEntry>): Promise<MoodEntry | undefined> {
+    const [entry] = await db
+      .update(moodEntries)
+      .set(updates)
+      .where(eq(moodEntries.id, id))
+      .returning();
+    return entry || undefined;
+  }
+
+  async getChatMessages(userId: number): Promise<ChatMessage[]> {
+    return await db.select().from(chatMessages).where(eq(chatMessages.userId, userId));
+  }
+
+  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+    const [message] = await db
+      .insert(chatMessages)
+      .values(insertMessage)
+      .returning();
+    return message;
+  }
+
+  async getReminders(userId: number): Promise<Reminder[]> {
+    return await db.select().from(reminders).where(eq(reminders.userId, userId));
+  }
+
+  async getRemindersByHabit(habitId: number): Promise<Reminder[]> {
+    return await db.select().from(reminders).where(eq(reminders.habitId, habitId));
+  }
+
+  async createReminder(insertReminder: InsertReminder): Promise<Reminder> {
+    const [reminder] = await db
+      .insert(reminders)
+      .values(insertReminder)
+      .returning();
+    return reminder;
+  }
+
+  async updateReminder(id: number, updates: Partial<Reminder>): Promise<Reminder | undefined> {
+    const [reminder] = await db
+      .update(reminders)
+      .set(updates)
+      .where(eq(reminders.id, id))
+      .returning();
+    return reminder || undefined;
+  }
+
+  async deleteReminder(id: number): Promise<boolean> {
+    const result = await db
+      .update(reminders)
+      .set({ isActive: false })
+      .where(eq(reminders.id, id));
+    return (result.rowCount || 0) > 0;
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -140,20 +237,32 @@ export class MemStorage implements IStorage {
   private habits: Map<number, Habit>;
   private habitCompletions: Map<number, HabitCompletion>;
   private coachingTips: Map<number, CoachingTip>;
+  private moodEntries: Map<number, MoodEntry>;
+  private chatMessages: Map<number, ChatMessage>;
+  private reminders: Map<number, Reminder>;
   private currentUserId: number;
   private currentHabitId: number;
   private currentCompletionId: number;
   private currentTipId: number;
+  private currentMoodId: number;
+  private currentChatId: number;
+  private currentReminderId: number;
 
   constructor() {
     this.users = new Map();
     this.habits = new Map();
     this.habitCompletions = new Map();
     this.coachingTips = new Map();
+    this.moodEntries = new Map();
+    this.chatMessages = new Map();
+    this.reminders = new Map();
     this.currentUserId = 1;
     this.currentHabitId = 1;
     this.currentCompletionId = 1;
     this.currentTipId = 1;
+    this.currentMoodId = 1;
+    this.currentChatId = 1;
+    this.currentReminderId = 1;
 
     // Create default user for demo
     this.createUser({ username: "demo", password: "demo" });
@@ -277,6 +386,89 @@ export class MemStorage implements IStorage {
     };
     this.coachingTips.set(id, tip);
     return tip;
+  }
+
+  async getMoodEntries(userId: number): Promise<MoodEntry[]> {
+    return Array.from(this.moodEntries.values()).filter(entry => entry.userId === userId);
+  }
+
+  async getMoodEntryByDate(userId: number, date: string): Promise<MoodEntry | undefined> {
+    return Array.from(this.moodEntries.values()).find(
+      entry => entry.userId === userId && entry.date === date
+    );
+  }
+
+  async createMoodEntry(insertEntry: InsertMoodEntry): Promise<MoodEntry> {
+    const id = this.currentMoodId++;
+    const entry: MoodEntry = {
+      ...insertEntry,
+      id,
+      createdAt: new Date(),
+    };
+    this.moodEntries.set(id, entry);
+    return entry;
+  }
+
+  async updateMoodEntry(id: number, updates: Partial<MoodEntry>): Promise<MoodEntry | undefined> {
+    const entry = this.moodEntries.get(id);
+    if (!entry) return undefined;
+    
+    const updatedEntry = { ...entry, ...updates };
+    this.moodEntries.set(id, updatedEntry);
+    return updatedEntry;
+  }
+
+  async getChatMessages(userId: number): Promise<ChatMessage[]> {
+    return Array.from(this.chatMessages.values()).filter(message => message.userId === userId);
+  }
+
+  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+    const id = this.currentChatId++;
+    const message: ChatMessage = {
+      ...insertMessage,
+      id,
+      createdAt: new Date(),
+    };
+    this.chatMessages.set(id, message);
+    return message;
+  }
+
+  async getReminders(userId: number): Promise<Reminder[]> {
+    return Array.from(this.reminders.values()).filter(reminder => reminder.userId === userId);
+  }
+
+  async getRemindersByHabit(habitId: number): Promise<Reminder[]> {
+    return Array.from(this.reminders.values()).filter(reminder => reminder.habitId === habitId);
+  }
+
+  async createReminder(insertReminder: InsertReminder): Promise<Reminder> {
+    const id = this.currentReminderId++;
+    const reminder: Reminder = {
+      ...insertReminder,
+      id,
+      lastSent: null,
+      createdAt: new Date(),
+    };
+    this.reminders.set(id, reminder);
+    return reminder;
+  }
+
+  async updateReminder(id: number, updates: Partial<Reminder>): Promise<Reminder | undefined> {
+    const reminder = this.reminders.get(id);
+    if (!reminder) return undefined;
+    
+    const updatedReminder = { ...reminder, ...updates };
+    this.reminders.set(id, updatedReminder);
+    return updatedReminder;
+  }
+
+  async deleteReminder(id: number): Promise<boolean> {
+    const reminder = this.reminders.get(id);
+    if (!reminder) return false;
+    
+    reminder.isActive = false;
+    this.reminders.set(id, reminder);
+    return true;
   }
 }
 

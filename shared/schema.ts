@@ -39,6 +39,34 @@ export const coachingTips = pgTable("coaching_tips", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const moodEntries = pgTable("mood_entries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD format
+  mood: integer("mood").notNull(), // 1-5 scale
+  energy: integer("energy").notNull(), // 1-5 scale
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  message: text("message").notNull(),
+  response: text("response").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const reminders = pgTable("reminders", {
+  id: serial("id").primaryKey(),
+  habitId: integer("habit_id").notNull(),
+  userId: integer("user_id").notNull(),
+  time: text("time").notNull(), // HH:MM format
+  isActive: boolean("is_active").notNull().default(true),
+  lastSent: timestamp("last_sent"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
@@ -61,6 +89,22 @@ export const insertCoachingTipSchema = createInsertSchema(coachingTips).omit({
   createdAt: true,
 });
 
+export const insertMoodEntrySchema = createInsertSchema(moodEntries).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertReminderSchema = createInsertSchema(reminders).omit({
+  id: true,
+  createdAt: true,
+  lastSent: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Habit = typeof habits.$inferSelect;
@@ -69,3 +113,9 @@ export type HabitCompletion = typeof habitCompletions.$inferSelect;
 export type InsertHabitCompletion = z.infer<typeof insertHabitCompletionSchema>;
 export type CoachingTip = typeof coachingTips.$inferSelect;
 export type InsertCoachingTip = z.infer<typeof insertCoachingTipSchema>;
+export type MoodEntry = typeof moodEntries.$inferSelect;
+export type InsertMoodEntry = z.infer<typeof insertMoodEntrySchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type Reminder = typeof reminders.$inferSelect;
+export type InsertReminder = z.infer<typeof insertReminderSchema>;

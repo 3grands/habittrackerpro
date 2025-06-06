@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
-import { insertHabitSchema, insertHabitCompletionSchema } from "@shared/schema";
+import { insertHabitSchema, insertHabitCompletionSchema, insertMoodEntrySchema, insertChatMessageSchema } from "@shared/schema";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
