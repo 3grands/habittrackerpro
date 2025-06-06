@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 
 // Security threat patterns
 const THREAT_PATTERNS = {
@@ -162,22 +163,23 @@ export function logSecurityEvents(req: Request, res: Response, next: NextFunctio
   const sensitiveEndpoints = ['/api/habits', '/api/mood', '/api/chat', '/api/subscription'];
   
   if (sensitiveEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
-    const fingerprint = generateFingerprint(req);
-    console.log(`[DATA ACCESS] ${req.method} ${req.path} | IP: ${req.ip} | Fingerprint: ${fingerprint}`);
+    const simpleFingerprint = generateSimpleFingerprint(req);
+    console.log(`[DATA ACCESS] ${req.method} ${req.path} | IP: ${req.ip} | Fingerprint: ${simpleFingerprint}`);
   }
   
   next();
 }
 
-function generateFingerprint(req: Request): string {
-  const components = [
-    req.ip,
-    req.headers['user-agent'] || '',
-    req.headers['accept-language'] || ''
-  ];
-  const crypto = require('crypto');
-  return crypto.createHash('sha256')
-    .update(components.join('|'))
-    .digest('hex')
-    .substring(0, 16);
+function generateSimpleFingerprint(req: Request): string {
+  const userAgent = req.headers['user-agent'] || '';
+  const ip = req.ip || '127.0.0.1';
+  // Simple hash alternative without crypto dependency
+  let hash = 0;
+  const str = `${ip}|${userAgent}`;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(16).substring(0, 8);
 }
