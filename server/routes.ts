@@ -1062,6 +1062,60 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
     }
   });
 
+  // Data access validation status endpoint
+  app.get("/api/data-validation-status", async (req, res) => {
+    try {
+      const dataAccessRules = {
+        public: {
+          sensitivityLevel: 0,
+          endpoints: ['/api/validate-keys', '/api/health'],
+          restrictions: 'None - open access'
+        },
+        internal: {
+          sensitivityLevel: 1,
+          endpoints: ['/api/coaching', '/api/validate-keys'],
+          restrictions: 'Requires valid session and API key validation'
+        },
+        sensitive: {
+          sensitivityLevel: 2,
+          endpoints: ['/api/habits', '/api/mood', '/api/chat'],
+          restrictions: 'Requires ownership validation, request integrity checks, size limits (512KB)'
+        },
+        restricted: {
+          sensitivityLevel: 3,
+          endpoints: ['/api/subscription', '/api/users', '/api/security-audit'],
+          restrictions: 'Requires HTTPS, origin validation, strict headers, size limits (256KB)'
+        }
+      };
+
+      const securityValidations = {
+        sqlInjectionProtection: true,
+        xssProtection: true,
+        pathTraversalProtection: true,
+        commandInjectionProtection: true,
+        requestSizeLimits: true,
+        contentTypeValidation: true,
+        originValidation: true,
+        httpsEnforcement: process.env.NODE_ENV === 'production',
+        responseDataSanitization: true
+      };
+
+      res.json({
+        timestamp: new Date().toISOString(),
+        dataAccessRules,
+        securityValidations,
+        status: 'All data access controls active',
+        version: '1.0'
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: "Data validation status check failed",
+        error: error.message
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -14,6 +14,11 @@ import {
   requireValidSubscription,
   validateResourceAccess
 } from "./auth-middleware";
+import {
+  validateDataAccess,
+  logDataAccess,
+  sanitizeResponse
+} from "./data-access-control";
 
 const app = express();
 
@@ -28,6 +33,11 @@ app.use(requireValidStripeKeys);
 app.use(requireValidOpenAIKey);
 app.use(requireValidSubscription);
 app.use(validateResourceAccess);
+
+// Apply data access control middleware
+app.use(validateDataAccess);
+app.use(logDataAccess);
+app.use(sanitizeResponse);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
