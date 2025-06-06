@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, ChartLine, Brain, Settings, Home, Heart, Wifi, WifiOff, Zap } from "lucide-react";
+import { Plus, ChartLine, Brain, Settings, Home, Heart, Wifi, WifiOff, Zap, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HabitCard } from "@/components/habit-card";
@@ -235,6 +235,17 @@ export default function HomePage() {
             <Link href="/wellness">
               <Heart className="w-5 h-5 mb-1" />
               <span className="text-xs">Wellness</span>
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex flex-col items-center py-2 px-3 ${location === "/pricing" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
+            asChild
+          >
+            <Link href="/pricing">
+              <Crown className="w-5 h-5 mb-1" />
+              <span className="text-xs">Upgrade</span>
             </Link>
           </Button>
         </div>
