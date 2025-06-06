@@ -10,6 +10,8 @@ import { WeeklyChart } from "@/components/weekly-chart";
 import { CoachingCard } from "@/components/coaching-card";
 import { QuickActions } from "@/components/quick-actions";
 import { QuickSetupWizard } from "@/components/quick-setup-wizard";
+import { HabitListSkeleton } from "@/components/habit-card-skeleton";
+import { StatsOverviewSkeleton, CoachingCardSkeleton, WeeklyChartSkeleton } from "@/components/stats-skeleton";
 import { HabitWithProgress, HabitStats } from "@/lib/types";
 import { offlineStorage } from "@/lib/offline-storage";
 import { Link, useLocation } from "wouter";
@@ -51,9 +53,64 @@ export default function HomePage() {
 
   if (habitsLoading || statsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
+      <>
+        {/* Header Skeleton */}
+        <header className="bg-gradient-to-r from-gray-300 to-gray-400 p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full"></div>
+              <div>
+                <div className="w-20 h-3 bg-white bg-opacity-20 rounded mb-1"></div>
+                <div className="w-12 h-4 bg-white bg-opacity-30 rounded"></div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="w-16 h-3 bg-white bg-opacity-20 rounded mb-1"></div>
+              <div className="w-10 h-5 bg-white bg-opacity-30 rounded"></div>
+            </div>
+          </div>
+        </header>
+
+        {/* Stats Overview Skeleton */}
+        <StatsOverviewSkeleton />
+
+        {/* Quick Actions Skeleton */}
+        <div className="p-4">
+          <div className="grid grid-cols-2 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                  <div className="w-16 h-4 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Habits List Skeleton */}
+        <div className="p-4">
+          <HabitListSkeleton />
+        </div>
+
+        {/* Weekly Chart Skeleton */}
+        <WeeklyChartSkeleton />
+
+        {/* Coaching Card Skeleton */}
+        <CoachingCardSkeleton />
+
+        {/* Bottom Navigation */}
+        <nav className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 px-2 py-2">
+          <div className="flex justify-around items-center">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center py-2 px-2">
+                <div className="w-4 h-4 bg-gray-200 rounded mb-1"></div>
+                <div className="w-8 h-2 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </nav>
+      </>
     );
   }
 
