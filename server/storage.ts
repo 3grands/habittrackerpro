@@ -52,10 +52,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getHabits(userId: number): Promise<Habit[]> {
-    return await db.select().from(habits).where(and(
-      eq(habits.userId, userId),
-      eq(habits.isActive, true)
-    ));
+    return await db.select().from(habits).where(
+      and(
+        eq(habits.userId, userId),
+        eq(habits.isActive, true)
+      )
+    );
   }
 
   async getHabit(id: number): Promise<Habit | undefined> {
