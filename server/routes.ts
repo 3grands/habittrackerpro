@@ -841,6 +841,76 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
     }
   });
 
+  // Stripe subscription setup endpoint
+  app.post("/api/create-subscription", async (req, res) => {
+    try {
+      const { plan = "Pro", trial_days = 7 } = req.body;
+      
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ message: "Stripe not configured" });
+      }
+
+      const Stripe = require('stripe');
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+      // Create a setup intent for the subscription
+      const setupIntent = await stripe.setupIntents.create({
+        usage: 'off_session',
+        payment_method_types: ['card'],
+        metadata: {
+          plan: plan,
+          trial_days: trial_days.toString()
+        }
+      });
+
+      res.json({ 
+        clientSecret: setupIntent.client_secret,
+        setupIntentId: setupIntent.id
+      });
+    } catch (error: any) {
+      console.error("Subscription creation error:", error);
+      res.status(500).json({ message: "Failed to create subscription: " + error.message });
+    }
+  });
+
+  // Payment success webhook endpoint
+  app.post("/api/stripe-webhook", async (req, res) => {
+    try {
+      // In a real app, verify the webhook signature
+      const { type, data } = req.body;
+      
+      if (type === 'setup_intent.succeeded') {
+        // Handle successful subscription setup
+        console.log('Subscription setup successful:', data.object.id);
+      }
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Webhook error:", error);
+      res.status(400).json({ message: "Webhook error" });
+    }
+  });
+
+  // Get subscription status endpoint
+  app.get("/api/subscription-status", async (req, res) => {
+    try {
+      // In a real app, check user's subscription status from database
+      res.json({
+        plan: "free",
+        status: "active",
+        trial_ends: null,
+        features: {
+          max_habits: 3,
+          ai_coaching: false,
+          advanced_analytics: false,
+          voice_commands: false
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get subscription status" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
