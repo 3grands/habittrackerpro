@@ -434,6 +434,202 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
     }
   });
 
+  // Smart Scheduling API
+  app.get("/api/smart-schedule", async (req, res) => {
+    try {
+      const userId = DEFAULT_USER_ID;
+      const habits = await storage.getHabits(userId);
+      
+      // Generate optimal times based on habit patterns and ADHD/autism considerations
+      const optimalTimes = habits.map((habit: any) => {
+        const category = habit.category.toLowerCase();
+        let suggestedTime = "09:00";
+        let reason = "General productivity time";
+        let energyLevel: 'high' | 'medium' | 'low' = 'medium';
+        let adaptationNote = "";
+
+        // ADHD/Autism-friendly scheduling
+        if (category.includes('exercise') || category.includes('fitness')) {
+          suggestedTime = "07:30";
+          reason = "Morning energy peak, fewer distractions";
+          energyLevel = 'high';
+          adaptationNote = "Exercise before daily stressors accumulate";
+        } else if (category.includes('meditation') || category.includes('mindfulness')) {
+          suggestedTime = "08:00";
+          reason = "Calm morning mind, easier focus";
+          energyLevel = 'medium';
+          adaptationNote = "Quiet environment helps with sensory regulation";
+        } else if (category.includes('reading') || category.includes('learning')) {
+          suggestedTime = "20:00";
+          reason = "Evening focus time, fewer interruptions";
+          energyLevel = 'medium';
+          adaptationNote = "Hyperfocus-friendly time block";
+        } else if (category.includes('water') || category.includes('hydration')) {
+          suggestedTime = "10:00";
+          reason = "Mid-morning reminder, routine building";
+          energyLevel = 'high';
+          adaptationNote = "Visual reminder works best";
+        }
+
+        return {
+          habitId: habit.id,
+          habitName: habit.name,
+          suggestedTime,
+          reason,
+          energyLevel,
+          conflictRisk: Math.random() * 30, // Mock conflict analysis
+          adaptationNote
+        };
+      });
+
+      // Generate energy pattern (mock data based on ADHD patterns)
+      const energyPattern = Array.from({length: 24}, (_, hour) => {
+        let energyLevel = 50;
+        
+        // ADHD-typical energy patterns
+        if (hour >= 6 && hour <= 10) energyLevel = 70 + Math.random() * 20; // Morning peak
+        else if (hour >= 11 && hour <= 13) energyLevel = 40 + Math.random() * 20; // Pre-lunch dip
+        else if (hour >= 14 && hour <= 16) energyLevel = 60 + Math.random() * 25; // Afternoon focus
+        else if (hour >= 19 && hour <= 22) energyLevel = 65 + Math.random() * 25; // Evening hyperfocus
+        else energyLevel = 30 + Math.random() * 30; // Other times
+        
+        return {
+          hour,
+          energyLevel: Math.round(energyLevel),
+          focusLevel: Math.round(energyLevel * 0.8)
+        };
+      });
+
+      // Weekly recommendations considering neurodivergent needs
+      const weeklyRecommendations = [
+        { day: "Monday", loadRecommendation: "light" as const, reason: "Transition day, gentle start" },
+        { day: "Tuesday", loadRecommendation: "moderate" as const, reason: "Good focus day" },
+        { day: "Wednesday", loadRecommendation: "full" as const, reason: "Peak performance window" },
+        { day: "Thursday", loadRecommendation: "moderate" as const, reason: "Maintaining momentum" },
+        { day: "Friday", loadRecommendation: "light" as const, reason: "Wind down, avoid overwhelm" },
+        { day: "Saturday", loadRecommendation: "light" as const, reason: "Rest and recharge" },
+        { day: "Sunday", loadRecommendation: "moderate" as const, reason: "Preparation day" }
+      ];
+
+      res.json({
+        optimalTimes,
+        energyPattern,
+        weeklyRecommendations
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate smart schedule" });
+    }
+  });
+
+  // Voice Commands API
+  app.post("/api/voice-command", async (req, res) => {
+    try {
+      const { command, action, habitId } = req.body;
+      const userId = DEFAULT_USER_ID;
+
+      switch (action) {
+        case "complete_habit":
+          if (!habitId) {
+            return res.status(400).json({ message: "Habit ID required for completion" });
+          }
+
+          const habit = await storage.getHabit(habitId);
+          if (!habit) {
+            return res.status(404).json({ message: "Habit not found" });
+          }
+
+          const today = new Date().toISOString().split('T')[0];
+          const existingCompletion = await storage.getHabitCompletionByDate(habitId, today);
+
+          if (existingCompletion) {
+            return res.json({ 
+              message: `${habit.name} was already completed today. Great consistency!`,
+              already_completed: true 
+            });
+          }
+
+          await storage.createHabitCompletion({
+            habitId,
+            date: today,
+            isCompleted: true
+          });
+
+          res.json({ 
+            message: `Great job! ${habit.name} is now marked as complete.`,
+            habit_name: habit.name 
+          });
+          break;
+
+        case "get_status":
+          const habits = await storage.getHabits(userId);
+          const todayDate = new Date().toISOString().split('T')[0];
+          
+          let completedToday = 0;
+          for (const habit of habits) {
+            const completion = await storage.getHabitCompletionByDate(habit.id, todayDate);
+            if (completion?.isCompleted) completedToday++;
+          }
+
+          const remaining = habits.length - completedToday;
+          let statusMessage = "";
+
+          if (remaining === 0) {
+            statusMessage = "Amazing! You've completed all your habits today. You're crushing it!";
+          } else if (completedToday === 0) {
+            statusMessage = `You have ${habits.length} habits to complete today. Start with something small and build momentum.`;
+          } else {
+            statusMessage = `You've completed ${completedToday} out of ${habits.length} habits today. ${remaining} more to go!`;
+          }
+
+          res.json({ 
+            message: statusMessage,
+            completed: completedToday,
+            total: habits.length,
+            remaining 
+          });
+          break;
+
+        case "add_habit":
+          res.json({ 
+            message: "I can help you add habits through the app interface. Try using the plus button on the home screen.",
+            redirect_suggestion: "add_habit_form"
+          });
+          break;
+
+        default:
+          res.status(400).json({ message: "Unknown voice command action" });
+      }
+    } catch (error) {
+      console.error("Voice command error:", error);
+      res.status(500).json({ message: "Failed to process voice command" });
+    }
+  });
+
+  // Habit scheduling endpoint
+  app.post("/api/habits/schedule", async (req, res) => {
+    try {
+      const { habitId, scheduledTime, reason } = req.body;
+      
+      const habit = await storage.getHabit(habitId);
+      if (!habit) {
+        return res.status(404).json({ message: "Habit not found" });
+      }
+
+      // Update habit with new scheduled time
+      const updatedHabit = await storage.updateHabit(habitId, {
+        reminderTime: scheduledTime
+      });
+
+      res.json({ 
+        message: `${habit.name} scheduled for ${scheduledTime}`,
+        habit: updatedHabit,
+        reason 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to schedule habit" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

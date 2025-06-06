@@ -1,7 +1,11 @@
 import { ArrowLeft, Home, ChartLine, Brain, Settings, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MoodTracker } from "@/components/mood-tracker";
 import { SmartReminders } from "@/components/smart-reminders";
+import { SmartScheduling } from "@/components/smart-scheduling";
+import { VoiceCommands } from "@/components/voice-commands";
+import { NeurodiverseRecommendations } from "@/components/neurodiverse-recommendations";
 import { Link, useLocation } from "wouter";
 
 export default function WellnessPage() {
@@ -21,12 +25,32 @@ export default function WellnessPage() {
         </div>
       </div>
 
-      <div className="p-4 pb-24 space-y-6">
-        {/* Mood Tracking */}
-        <MoodTracker />
+      <div className="p-4 pb-24">
+        <Tabs defaultValue="mood" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="mood">Mood</TabsTrigger>
+            <TabsTrigger value="scheduling">Schedule</TabsTrigger>
+            <TabsTrigger value="voice">Voice</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
+          </TabsList>
 
-        {/* Smart Reminders */}
-        <SmartReminders />
+          <TabsContent value="mood" className="space-y-6">
+            <MoodTracker />
+            <SmartReminders />
+          </TabsContent>
+
+          <TabsContent value="scheduling" className="space-y-6">
+            <SmartScheduling />
+          </TabsContent>
+
+          <TabsContent value="voice" className="space-y-6">
+            <VoiceCommands />
+          </TabsContent>
+
+          <TabsContent value="support" className="space-y-6">
+            <NeurodiverseRecommendations />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Bottom Navigation */}
