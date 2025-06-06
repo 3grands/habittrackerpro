@@ -5,6 +5,8 @@ import {
   type HabitCompletion, type InsertHabitCompletion,
   type CoachingTip, type InsertCoachingTip
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -28,6 +30,107 @@ export interface IStorage {
   // Coaching methods
   getCoachingTips(userId: number): Promise<CoachingTip[]>;
   createCoachingTip(tip: InsertCoachingTip): Promise<CoachingTip>;
+}
+
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async getHabits(userId: number): Promise<Habit[]> {
+    return await db.select().from(habits).where(and(
+      eq(habits.userId, userId),
+      eq(habits.isActive, true)
+    ));
+  }
+
+  async getHabit(id: number): Promise<Habit | undefined> {
+    const [habit] = await db.select().from(habits).where(eq(habits.id, id));
+    return habit || undefined;
+  }
+
+  async createHabit(insertHabit: InsertHabit): Promise<Habit> {
+    const [habit] = await db
+      .insert(habits)
+      .values(insertHabit)
+      .returning();
+    return habit;
+  }
+
+  async updateHabit(id: number, updates: Partial<Habit>): Promise<Habit | undefined> {
+    const [habit] = await db
+      .update(habits)
+      .set(updates)
+      .where(eq(habits.id, id))
+      .returning();
+    return habit || undefined;
+  }
+
+  async deleteHabit(id: number): Promise<boolean> {
+    const result = await db
+      .update(habits)
+      .set({ isActive: false })
+      .where(eq(habits.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getHabitCompletions(habitId: number): Promise<HabitCompletion[]> {
+    return await db.select().from(habitCompletions).where(eq(habitCompletions.habitId, habitId));
+  }
+
+  async getHabitCompletionByDate(habitId: number, date: string): Promise<HabitCompletion | undefined> {
+    const [completion] = await db
+      .select()
+      .from(habitCompletions)
+      .where(and(
+        eq(habitCompletions.habitId, habitId),
+        eq(habitCompletions.date, date)
+      ));
+    return completion || undefined;
+  }
+
+  async createHabitCompletion(insertCompletion: InsertHabitCompletion): Promise<HabitCompletion> {
+    const [completion] = await db
+      .insert(habitCompletions)
+      .values(insertCompletion)
+      .returning();
+    return completion;
+  }
+
+  async updateHabitCompletion(id: number, updates: Partial<HabitCompletion>): Promise<HabitCompletion | undefined> {
+    const [completion] = await db
+      .update(habitCompletions)
+      .set(updates)
+      .where(eq(habitCompletions.id, id))
+      .returning();
+    return completion || undefined;
+  }
+
+  async getCoachingTips(userId: number): Promise<CoachingTip[]> {
+    return await db.select().from(coachingTips).where(eq(coachingTips.userId, userId));
+  }
+
+  async createCoachingTip(insertTip: InsertCoachingTip): Promise<CoachingTip> {
+    const [tip] = await db
+      .insert(coachingTips)
+      .values(insertTip)
+      .returning();
+    return tip;
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -84,8 +187,14 @@ export class MemStorage implements IStorage {
   async createHabit(insertHabit: InsertHabit): Promise<Habit> {
     const id = this.currentHabitId++;
     const habit: Habit = {
-      ...insertHabit,
       id,
+      name: insertHabit.name,
+      userId: insertHabit.userId,
+      category: insertHabit.category,
+      frequency: insertHabit.frequency || "daily",
+      goal: insertHabit.goal || 1,
+      unit: insertHabit.unit || "times",
+      reminderTime: insertHabit.reminderTime || null,
       streak: 0,
       isActive: true,
       createdAt: new Date(),
@@ -127,8 +236,11 @@ export class MemStorage implements IStorage {
   async createHabitCompletion(insertCompletion: InsertHabitCompletion): Promise<HabitCompletion> {
     const id = this.currentCompletionId++;
     const completion: HabitCompletion = {
-      ...insertCompletion,
       id,
+      habitId: insertCompletion.habitId,
+      date: insertCompletion.date,
+      progress: insertCompletion.progress || 0,
+      isCompleted: insertCompletion.isCompleted || false,
       completedAt: insertCompletion.isCompleted ? new Date() : null,
     };
     this.habitCompletions.set(id, completion);
@@ -166,4 +278,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
