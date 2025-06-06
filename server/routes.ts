@@ -222,6 +222,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Personal Coach Chat
+  app.post("/api/coaching/chat", async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      // Get user's habits and recent progress for context
+      const habits = await storage.getHabits(DEFAULT_USER_ID);
+      const today = new Date().toISOString().split('T')[0];
+      
+      let completedToday = 0;
+      for (const habit of habits) {
+        const completion = await storage.getHabitCompletionByDate(habit.id, today);
+        if (completion?.isCompleted) completedToday++;
+      }
+
+      // Get recent mood entries for context
+      const moodEntries = await storage.getMoodEntries(DEFAULT_USER_ID);
+      const recentMoods = moodEntries.slice(-7);
+      const avgMood = recentMoods.length > 0 
+        ? recentMoods.reduce((sum, entry) => sum + entry.mood, 0) / recentMoods.length
+        : null;
+
+      const habitNames = habits.map(h => h.name).join(", ");
+      const moodContext = avgMood ? `Recent average mood: ${avgMood.toFixed(1)}/5` : "";
+
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a supportive, knowledgeable habit coach. The user has these habits: ${habitNames}. Today they completed ${completedToday}/${habits.length} habits. ${moodContext}. 
+
+Provide personalized, empathetic responses. Be encouraging, practical, and specific. Ask follow-up questions when appropriate. Keep responses conversational but professional, around 2-4 sentences.`
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        max_tokens: 200,
+      });
+
+      const aiResponse = response.choices[0].message.content || "I'm here to help you build better habits. What would you like to talk about?";
+      
+      // Store the conversation
+      await storage.createChatMessage({
+        userId: DEFAULT_USER_ID,
+        message,
+        response: aiResponse,
+      });
+
+      res.json({ response: aiResponse });
+    } catch (error) {
+      console.error("Chat API error:", error);
+      res.json({ 
+        response: "I'm having trouble connecting right now, but I'm here to support you! What specific habit challenge are you facing today?" 
+      });
+    }
+  });
+
+  // Get chat history
+  app.get("/api/coaching/chat", async (req, res) => {
+    try {
+      const messages = await storage.getChatMessages(DEFAULT_USER_ID);
+      const recentMessages = messages.slice(-20); // Last 20 messages
+      res.json(recentMessages);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch chat history" });
+    }
+  });
+
+  // Mood Tracking
+  app.post("/api/mood", async (req, res) => {
+    try {
+      const validatedData = insertMoodEntrySchema.parse({
+        ...req.body,
+        userId: DEFAULT_USER_ID,
+      });
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Check if mood entry already exists for today
+      const existingEntry = await storage.getMoodEntryByDate(DEFAULT_USER_ID, today);
+      
+      if (existingEntry) {
+        // Update existing entry
+        const updatedEntry = await storage.updateMoodEntry(existingEntry.id, {
+          mood: validatedData.mood,
+          energy: validatedData.energy,
+          notes: validatedData.notes,
+        });
+        res.json(updatedEntry);
+      } else {
+        // Create new entry
+        const entry = await storage.createMoodEntry({
+          ...validatedData,
+          date: today,
+        });
+        res.status(201).json(entry);
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid mood data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to save mood entry" });
+      }
+    }
+  });
+
+  // Get mood entries
+  app.get("/api/mood", async (req, res) => {
+    try {
+      const entries = await storage.getMoodEntries(DEFAULT_USER_ID);
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch mood entries" });
+    }
+  });
+
+  // Get today's mood
+  app.get("/api/mood/today", async (req, res) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const entry = await storage.getMoodEntryByDate(DEFAULT_USER_ID, today);
+      res.json(entry || null);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch today's mood" });
+    }
+  });
+
+  // Smart Reminders
+  app.get("/api/reminders", async (req, res) => {
+    try {
+      const reminders = await storage.getReminders(DEFAULT_USER_ID);
+      res.json(reminders);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch reminders" });
+    }
+  });
+
+  app.post("/api/reminders", async (req, res) => {
+    try {
+      const { habitId, time } = req.body;
+      
+      if (!habitId || !time) {
+        return res.status(400).json({ message: "Habit ID and time are required" });
+      }
+
+      const reminder = await storage.createReminder({
+        habitId,
+        userId: DEFAULT_USER_ID,
+        time,
+        isActive: true,
+      });
+      
+      res.status(201).json(reminder);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create reminder" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

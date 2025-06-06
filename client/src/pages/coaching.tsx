@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, RefreshCw, Brain, Send, Home, ChartLine, Settings, Lightbulb, Clock, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { CoachChat } from "@/components/coach-chat";
 import { apiRequest } from "@/lib/queryClient";
 import { CoachingAdvice } from "@/lib/types";
 import { Link, useLocation } from "wouter";
@@ -134,36 +135,8 @@ export default function CoachingPage() {
           </div>
         </div>
 
-        {/* Ask Coach */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Ask Your Coach</h3>
-          <div className="space-y-4">
-            <Textarea
-              value={userQuestion}
-              onChange={(e) => setUserQuestion(e.target.value)}
-              placeholder="Ask me anything about building better habits..."
-              className="resize-none"
-              rows={3}
-            />
-            <Button
-              onClick={() => askCoachMutation.mutate(userQuestion)}
-              disabled={!userQuestion.trim() || isGettingAdvice}
-              className="w-full bg-primary hover:bg-primary/90 flex items-center justify-center space-x-2"
-            >
-              {isGettingAdvice ? (
-                <>
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                  <span>Getting advice...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  <span>Get Advice</span>
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        {/* Personal Coach Chat */}
+        <CoachChat />
       </div>
 
       {/* Bottom Navigation */}

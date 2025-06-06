@@ -401,8 +401,12 @@ export class MemStorage implements IStorage {
   async createMoodEntry(insertEntry: InsertMoodEntry): Promise<MoodEntry> {
     const id = this.currentMoodId++;
     const entry: MoodEntry = {
-      ...insertEntry,
       id,
+      userId: insertEntry.userId,
+      date: insertEntry.date,
+      mood: insertEntry.mood,
+      energy: insertEntry.energy,
+      notes: insertEntry.notes || null,
       createdAt: new Date(),
     };
     this.moodEntries.set(id, entry);
@@ -444,8 +448,11 @@ export class MemStorage implements IStorage {
   async createReminder(insertReminder: InsertReminder): Promise<Reminder> {
     const id = this.currentReminderId++;
     const reminder: Reminder = {
-      ...insertReminder,
       id,
+      habitId: insertReminder.habitId,
+      userId: insertReminder.userId,
+      time: insertReminder.time,
+      isActive: insertReminder.isActive ?? true,
       lastSent: null,
       createdAt: new Date(),
     };
