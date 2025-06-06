@@ -6,6 +6,7 @@ import { Star, Download, Heart, TrendingUp, Crown, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MarketplaceSkeleton } from "@/components/marketplace-skeleton";
 
 interface HabitPack {
   id: string;
@@ -121,6 +122,13 @@ const FEATURED_HABIT_PACKS: HabitPack[] = [
 export function HabitMarketplace() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("popular");
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate initial loading for smooth UX
+  useState(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
