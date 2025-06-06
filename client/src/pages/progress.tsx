@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Home, ChartLine, Brain, Settings } from "lucide-react";
+import { ArrowLeft, Home, ChartLine, Brain, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HabitStats } from "@/lib/types";
 import { Link, useLocation } from "wouter";
@@ -172,10 +172,13 @@ export default function ProgressPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-gray-600"
+            className={`flex flex-col items-center py-2 px-3 ${location === "/wellness" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
+            asChild
           >
-            <Settings className="w-5 h-5 mb-1" />
-            <span className="text-xs">Settings</span>
+            <Link href="/wellness">
+              <Heart className="w-5 h-5 mb-1" />
+              <span className="text-xs">Wellness</span>
+            </Link>
           </Button>
         </div>
       </nav>

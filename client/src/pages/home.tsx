@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, ChartLine, Brain, Settings, Home } from "lucide-react";
+import { Plus, ChartLine, Brain, Settings, Home, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HabitCard } from "@/components/habit-card";
 import { AddHabitModal } from "@/components/add-habit-modal";
@@ -148,10 +148,13 @@ export default function HomePage() {
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-gray-600"
+            className={`flex flex-col items-center py-2 px-3 ${location === "/wellness" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
+            asChild
           >
-            <Settings className="w-5 h-5 mb-1" />
-            <span className="text-xs">Settings</span>
+            <Link href="/wellness">
+              <Heart className="w-5 h-5 mb-1" />
+              <span className="text-xs">Wellness</span>
+            </Link>
           </Button>
         </div>
       </nav>

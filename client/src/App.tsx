@@ -7,6 +7,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import HomePage from "@/pages/home";
 import ProgressPage from "@/pages/progress";
 import CoachingPage from "@/pages/coaching";
+import WellnessPage from "@/pages/wellness";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/progress" component={ProgressPage} />
       <Route path="/coaching" component={CoachingPage} />
+      <Route path="/wellness" component={WellnessPage} />
       <Route component={NotFound} />
     </Switch>
   );

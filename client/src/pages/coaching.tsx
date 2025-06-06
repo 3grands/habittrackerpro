@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, RefreshCw, Brain, Send, Home, ChartLine, Settings, Lightbulb, Clock, Target } from "lucide-react";
+import { ArrowLeft, RefreshCw, Brain, Send, Home, ChartLine, Heart, Lightbulb, Clock, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CoachChat } from "@/components/coach-chat";
@@ -107,7 +107,7 @@ export default function CoachingPage() {
           </div>
           <div className="space-y-4">
             <p className="leading-relaxed">
-              {currentAdvice || latestTip?.tip || "Based on your recent progress, I notice you're building great momentum! Keep focusing on consistency over perfection. Small daily actions create lasting change. 💪"}
+{currentAdvice || (latestTip as any)?.tip || "Based on your recent progress, I notice you're building great momentum! Keep focusing on consistency over perfection. Small daily actions create lasting change."}
             </p>
             <div className="flex items-center space-x-2 text-sm opacity-75">
               <Brain className="w-4 h-4" />
@@ -178,10 +178,13 @@ export default function CoachingPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-gray-600"
+            className={`flex flex-col items-center py-2 px-3 ${location === "/wellness" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
+            asChild
           >
-            <Settings className="w-5 h-5 mb-1" />
-            <span className="text-xs">Settings</span>
+            <Link href="/wellness">
+              <Heart className="w-5 h-5 mb-1" />
+              <span className="text-xs">Wellness</span>
+            </Link>
           </Button>
         </div>
       </nav>
