@@ -2,8 +2,21 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { validateAllApiKeys } from "./api-validation";
+import { 
+  securityHeaders, 
+  rateLimiter, 
+  validateApiKeyUsage, 
+  validateRequestIntegrity 
+} from "./security-middleware";
 
 const app = express();
+
+// Apply security middleware first
+app.use(securityHeaders);
+app.use(rateLimiter);
+app.use(validateRequestIntegrity);
+app.use(validateApiKeyUsage);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
