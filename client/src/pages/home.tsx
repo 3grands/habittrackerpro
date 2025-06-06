@@ -1,18 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, ChartLine, Brain, Settings, Home, Heart } from "lucide-react";
+import { Plus, ChartLine, Brain, Settings, Home, Heart, Wifi, WifiOff, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { HabitCard } from "@/components/habit-card";
 import { AddHabitModal } from "@/components/add-habit-modal";
 import { HabitTemplates } from "@/components/habit-templates";
 import { WeeklyChart } from "@/components/weekly-chart";
 import { CoachingCard } from "@/components/coaching-card";
+import { QuickActions } from "@/components/quick-actions";
 import { HabitWithProgress, HabitStats } from "@/lib/types";
+import { offlineStorage } from "@/lib/offline-storage";
 import { Link, useLocation } from "wouter";
 
 export default function HomePage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [syncStatus, setSyncStatus] = useState(offlineStorage.getSyncStatus());
   const [location] = useLocation();
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Update sync status periodically
+    const interval = setInterval(() => {
+      setSyncStatus(offlineStorage.getSyncStatus());
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
+    };
+  }, []);
 
   const { data: habits, isLoading: habitsLoading } = useQuery<HabitWithProgress[]>({
     queryKey: ["/api/habits"],
@@ -32,7 +57,7 @@ export default function HomePage() {
 
   return (
     <>
-      {/* Header */}
+      {/* Header with Offline Status */}
       <header className="bg-gradient-to-r from-primary to-success p-4 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -40,7 +65,20 @@ export default function HomePage() {
               <span className="text-sm font-medium">S</span>
             </div>
             <div>
-              <p className="text-sm opacity-90">Good morning</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-sm opacity-90">Good morning</p>
+                {!isOnline && (
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200 text-xs">
+                    <WifiOff className="w-3 h-3 mr-1" />
+                    Offline
+                  </Badge>
+                )}
+                {syncStatus.pendingActions > 0 && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                    {syncStatus.pendingActions} syncing
+                  </Badge>
+                )}
+              </div>
               <p className="font-semibold">Sarah</p>
             </div>
           </div>
@@ -78,10 +116,30 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Today's Habits */}
+      {/* Quick Actions - Prominent placement */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Today's Habits</h2>
+          <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+            <Zap className="w-5 h-5 text-orange-500" />
+            <span>Quick Actions</span>
+          </h2>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add Habit
+          </Button>
+        </div>
+
+        <QuickActions />
+      </div>
+
+      {/* All Habits */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-800">All Habits</h2>
           <span className="text-sm text-gray-500">
             {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </span>
