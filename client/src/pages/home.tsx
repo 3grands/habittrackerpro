@@ -154,12 +154,29 @@ export default function HomePage() {
             ))
           ) : (
             <div className="space-y-4">
-              <div className="text-center py-4">
-                <p className="text-gray-500 mb-4">No habits yet. Start building your routine!</p>
-                <Button onClick={() => setIsAddModalOpen(true)} className="bg-primary">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Habit
-                </Button>
+              <div className="text-center py-6">
+                <div className="w-16 h-16 mx-auto bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                  <Zap className="w-8 h-8 text-primary" />
+                </div>
+                <p className="text-gray-700 font-medium mb-2">Ready to build better habits?</p>
+                <p className="text-gray-500 text-sm mb-6">Get started with our smart setup wizard or choose from templates</p>
+                
+                <div className="flex flex-col space-y-3">
+                  <Button 
+                    onClick={() => setShowSetupWizard(true)} 
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Quick Setup (3 steps)
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsAddModalOpen(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Custom Habit
+                  </Button>
+                </div>
               </div>
               <HabitTemplates />
             </div>
@@ -234,6 +251,15 @@ export default function HomePage() {
 
       {/* Add Habit Modal */}
       <AddHabitModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+
+      {/* Quick Setup Wizard Modal */}
+      {showSetupWizard && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-auto">
+            <QuickSetupWizard onComplete={() => setShowSetupWizard(false)} />
+          </div>
+        </div>
+      )}
     </>
   );
 }
