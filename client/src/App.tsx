@@ -10,6 +10,9 @@ import CoachingPage from "@/pages/coaching";
 import WellnessPage from "@/pages/wellness";
 import PricingPage from "@/pages/pricing";
 import SubscribePage from "@/pages/subscribe";
+import MarketplacePage from "@/pages/marketplace";
+import CommunityPage from "@/pages/community";
+import AnalyticsPage from "@/pages/analytics";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -19,6 +22,9 @@ function Router() {
       <Route path="/progress" component={ProgressPage} />
       <Route path="/coaching" component={CoachingPage} />
       <Route path="/wellness" component={WellnessPage} />
+      <Route path="/marketplace" component={MarketplacePage} />
+      <Route path="/community" component={CommunityPage} />
+      <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/subscribe" component={SubscribePage} />
       <Route component={NotFound} />
