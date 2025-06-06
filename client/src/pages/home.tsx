@@ -93,12 +93,15 @@ export default function HomePage() {
               <HabitCard key={habit.id} habit={habit} />
             ))
           ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No habits yet. Start building your routine!</p>
-              <Button onClick={() => setIsAddModalOpen(true)} className="bg-primary">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Habit
-              </Button>
+            <div className="space-y-4">
+              <div className="text-center py-4">
+                <p className="text-gray-500 mb-4">No habits yet. Start building your routine!</p>
+                <Button onClick={() => setIsAddModalOpen(true)} className="bg-primary">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Habit
+                </Button>
+              </div>
+              <HabitTemplates />
             </div>
           )}
         </div>
