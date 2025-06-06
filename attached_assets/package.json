@@ -1,0 +1,16 @@
+{
+  "name": "fresh-habit-tracker-app",
+  "version": "1.0.0",
+  "main": "App.js",
+  "scripts": {
+    "start": "expo start"
+  },
+  "dependencies": {
+    "expo": "~50.0.0",
+    "react": "18.2.0",
+    "react-native": "0.73.0",
+    "@react-navigation/native": "^6.1.6",
+    "@react-navigation/stack": "^6.3.16",
+    "axios": "^1.6.8"
+  }
+}
