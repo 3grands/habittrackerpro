@@ -4,6 +4,7 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { insertHabitSchema, insertHabitCompletionSchema, insertMoodEntrySchema, insertChatMessageSchema } from "@shared/schema";
 import OpenAI from "openai";
+import Stripe from "stripe";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
@@ -850,8 +851,9 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
         return res.status(500).json({ message: "Stripe not configured" });
       }
 
-      const Stripe = require('stripe');
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+        apiVersion: '2025-05-28.basil',
+      });
 
       // Create a setup intent for the subscription
       const setupIntent = await stripe.setupIntents.create({
