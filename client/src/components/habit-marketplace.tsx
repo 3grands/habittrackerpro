@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -125,10 +125,10 @@ export function HabitMarketplace() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Simulate initial loading for smooth UX
-  useState(() => {
+  useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
-  });
+  }, []);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -163,6 +163,10 @@ export function HabitMarketplace() {
     if (sortBy === "price-high") return b.price - a.price;
     return 0;
   });
+
+  if (isLoading) {
+    return <MarketplaceSkeleton />;
+  }
 
   return (
     <div className="p-6 space-y-6">
