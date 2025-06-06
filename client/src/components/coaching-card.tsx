@@ -9,7 +9,7 @@ export function CoachingCard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: tip } = useQuery<CoachingTip>({
+  const { data: tipData } = useQuery<CoachingTip>({
     queryKey: ["/api/coaching/latest"],
   });
 
@@ -42,7 +42,7 @@ export function CoachingCard() {
           </Button>
         </div>
         <p className="text-sm opacity-90 leading-relaxed mb-3">
-          {tip?.tip || "Start small and be consistent. Focus on building one habit at a time for lasting success!"}
+          {tipData?.tip || "Start small and be consistent. Focus on building one habit at a time for lasting success!"}
         </p>
         <div className="flex items-center space-x-2">
           <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">

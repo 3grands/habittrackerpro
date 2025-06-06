@@ -65,15 +65,15 @@ export function requireValidStripeKeys(req: Request, res: Response, next: NextFu
 }
 
 export function requireValidOpenAIKey(req: Request, res: Response, next: NextFunction) {
-  // Only protect OpenAI-related endpoints
-  const openaiEndpoints = [
-    '/api/coaching',
-    '/api/chat',
+  // Only protect AI generation endpoints, allow coaching/latest to use fallbacks
+  const protectedEndpoints = [
+    '/api/coaching/advice',
+    '/api/coaching/chat',
     '/api/ai-insights',
     '/api/generate-recommendations'
   ];
   
-  if (!openaiEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
+  if (!protectedEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
     return next();
   }
   

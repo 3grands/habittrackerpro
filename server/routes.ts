@@ -214,13 +214,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/coaching/latest", async (req, res) => {
     try {
       const tips = await storage.getCoachingTips(DEFAULT_USER_ID);
-      const latestTip = tips.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+      const latestTip = tips.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
       
       res.json({ 
         tip: latestTip?.tip || "Start small and be consistent. Focus on building one habit at a time for lasting success!" 
       });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch coaching tip" });
+      console.error("Coaching tip error:", error);
+      res.json({ 
+        tip: "Start small and be consistent. Focus on building one habit at a time for lasting success!" 
+      });
     }
   });
 
