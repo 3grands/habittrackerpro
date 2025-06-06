@@ -6,6 +6,8 @@ import { SmartReminders } from "@/components/smart-reminders";
 import { SmartScheduling } from "@/components/smart-scheduling";
 import { VoiceCommands } from "@/components/voice-commands";
 import { NeurodiverseRecommendations } from "@/components/neurodiverse-recommendations";
+import { ContextAwareReminders } from "@/components/context-aware-reminders";
+import { TrendInsights } from "@/components/trend-insights";
 import { Link, useLocation } from "wouter";
 
 export default function WellnessPage() {
@@ -27,10 +29,12 @@ export default function WellnessPage() {
 
       <div className="p-4 pb-24">
         <Tabs defaultValue="mood" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="mood">Mood</TabsTrigger>
             <TabsTrigger value="scheduling">Schedule</TabsTrigger>
             <TabsTrigger value="voice">Voice</TabsTrigger>
+            <TabsTrigger value="reminders">Alerts</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
             <TabsTrigger value="support">Support</TabsTrigger>
           </TabsList>
 
@@ -45,6 +49,14 @@ export default function WellnessPage() {
 
           <TabsContent value="voice" className="space-y-6">
             <VoiceCommands />
+          </TabsContent>
+
+          <TabsContent value="reminders" className="space-y-6">
+            <ContextAwareReminders />
+          </TabsContent>
+
+          <TabsContent value="insights" className="space-y-6">
+            <TrendInsights />
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6">

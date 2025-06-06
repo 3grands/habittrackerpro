@@ -9,12 +9,14 @@ import { HabitTemplates } from "@/components/habit-templates";
 import { WeeklyChart } from "@/components/weekly-chart";
 import { CoachingCard } from "@/components/coaching-card";
 import { QuickActions } from "@/components/quick-actions";
+import { QuickSetupWizard } from "@/components/quick-setup-wizard";
 import { HabitWithProgress, HabitStats } from "@/lib/types";
 import { offlineStorage } from "@/lib/offline-storage";
 import { Link, useLocation } from "wouter";
 
 export default function HomePage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncStatus, setSyncStatus] = useState(offlineStorage.getSyncStatus());
   const [location] = useLocation();
