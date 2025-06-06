@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Home, ChartLine, Brain, Heart } from "lucide-react";
+import { ArrowLeft, Home, ChartLine, Brain, Heart, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HabitStats } from "@/lib/types";
+import { HabitInsights } from "@/components/habit-insights";
+import { GoalSetting } from "@/components/goal-setting";
 import { Link, useLocation } from "wouter";
 
 export default function ProgressPage() {

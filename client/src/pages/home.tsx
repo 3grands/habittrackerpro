@@ -4,6 +4,7 @@ import { Plus, ChartLine, Brain, Settings, Home, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HabitCard } from "@/components/habit-card";
 import { AddHabitModal } from "@/components/add-habit-modal";
+import { HabitTemplates } from "@/components/habit-templates";
 import { WeeklyChart } from "@/components/weekly-chart";
 import { CoachingCard } from "@/components/coaching-card";
 import { HabitWithProgress, HabitStats } from "@/lib/types";
