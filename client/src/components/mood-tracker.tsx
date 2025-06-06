@@ -37,7 +37,7 @@ export function MoodTracker() {
     enabled: !showForm
   });
 
-  const { data: recentMoods } = useQuery({
+  const { data: recentMoods = [] } = useQuery({
     queryKey: ["/api/mood/recent"]
   });
 
@@ -82,13 +82,13 @@ export function MoodTracker() {
   };
 
   const getAverageMood = () => {
-    if (!recentMoods || recentMoods.length === 0) return 0;
+    if (!Array.isArray(recentMoods) || recentMoods.length === 0) return 0;
     const sum = recentMoods.reduce((acc: number, mood: any) => acc + mood.mood, 0);
     return (sum / recentMoods.length).toFixed(1);
   };
 
   const getAverageEnergy = () => {
-    if (!recentMoods || recentMoods.length === 0) return 0;
+    if (!Array.isArray(recentMoods) || recentMoods.length === 0) return 0;
     const sum = recentMoods.reduce((acc: number, mood: any) => acc + mood.energy, 0);
     return (sum / recentMoods.length).toFixed(1);
   };
@@ -110,16 +110,16 @@ export function MoodTracker() {
                   <h4 className="font-medium text-green-800">Today's Check-in Complete!</h4>
                   <div className="flex items-center space-x-4 mt-2">
                     <div className="flex items-center space-x-2">
-                      <span className="text-2xl">{moodEmojis.find(m => m.value === todayMood.mood)?.emoji}</span>
+                      <span className="text-2xl">{moodEmojis.find(m => m.value === (todayMood as any)?.mood)?.emoji}</span>
                       <span className="text-sm text-green-700">Mood</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-2xl">{energyEmojis.find(e => e.value === todayMood.energy)?.emoji}</span>
+                      <span className="text-2xl">{energyEmojis.find(e => e.value === (todayMood as any)?.energy)?.emoji}</span>
                       <span className="text-sm text-green-700">Energy</span>
                     </div>
                   </div>
-                  {todayMood.notes && (
-                    <p className="text-sm text-green-700 mt-2 italic">"{todayMood.notes}"</p>
+                  {(todayMood as any)?.notes && (
+                    <p className="text-sm text-green-700 mt-2 italic">"{(todayMood as any).notes}"</p>
                   )}
                 </div>
                 <Button

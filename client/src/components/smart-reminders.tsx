@@ -25,10 +25,19 @@ export function SmartReminders() {
 
   const createReminderMutation = useMutation({
     mutationFn: async (data: { habitId: number; time: string }) => {
-      return apiRequest("/api/reminders", {
+      const response = await fetch("/api/reminders", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(data)
       });
+      
+      if (!response.ok) {
+        throw new Error("Failed to create reminder");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/reminders"] });
@@ -40,10 +49,19 @@ export function SmartReminders() {
 
   const toggleReminderMutation = useMutation({
     mutationFn: async (data: { id: number; isActive: boolean }) => {
-      return apiRequest(`/api/reminders/${data.id}`, {
+      const response = await fetch(`/api/reminders/${data.id}`, {
         method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ isActive: data.isActive })
       });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update reminder");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/reminders"] });
@@ -52,9 +70,15 @@ export function SmartReminders() {
 
   const deleteReminderMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/reminders/${id}`, {
+      const response = await fetch(`/api/reminders/${id}`, {
         method: "DELETE"
       });
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete reminder");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/reminders"] });
@@ -132,7 +156,7 @@ export function SmartReminders() {
                 </SelectTrigger>
                 <SelectContent>
                   {habits
-                    .filter(habit => !reminders.some((r: any) => r.habitId === habit.id))
+                    .filter(habit => !Array.isArray(reminders) ? true : !(reminders as any[]).some((r: any) => r.habitId === habit.id))
                     .map((habit) => (
                       <SelectItem key={habit.id} value={habit.id.toString()}>
                         {habit.name}
@@ -196,14 +220,14 @@ export function SmartReminders() {
 
         {/* Active Reminders */}
         <div className="space-y-3">
-          {reminders.length === 0 ? (
+          {!Array.isArray(reminders) || reminders.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Bell className="w-12 h-12 mx-auto mb-3 text-gray-300" />
               <p>No reminders set up yet</p>
               <p className="text-sm">Add reminders to stay on track with your habits</p>
             </div>
           ) : (
-            reminders.map((reminder: any) => (
+            (reminders as any[]).map((reminder: any) => (
               <div
                 key={reminder.id}
                 className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
@@ -243,7 +267,7 @@ export function SmartReminders() {
         </div>
 
         {/* Smart Insights */}
-        {reminders.length > 0 && (
+        {Array.isArray(reminders) && reminders.length > 0 && (
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
             <div className="flex items-start space-x-2">
               <Settings className="w-4 h-4 text-blue-600 mt-0.5" />
