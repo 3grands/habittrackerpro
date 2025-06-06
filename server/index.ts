@@ -8,6 +8,12 @@ import {
   validateApiKeyUsage, 
   validateRequestIntegrity 
 } from "./security-middleware";
+import {
+  requireValidStripeKeys,
+  requireValidOpenAIKey,
+  requireValidSubscription,
+  validateResourceAccess
+} from "./auth-middleware";
 
 const app = express();
 
@@ -16,6 +22,12 @@ app.use(securityHeaders);
 app.use(rateLimiter);
 app.use(validateRequestIntegrity);
 app.use(validateApiKeyUsage);
+
+// Apply API key validation gates for sensitive resources
+app.use(requireValidStripeKeys);
+app.use(requireValidOpenAIKey);
+app.use(requireValidSubscription);
+app.use(validateResourceAccess);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

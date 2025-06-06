@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { insertHabitSchema, insertHabitCompletionSchema, insertMoodEntrySchema, insertChatMessageSchema } from "@shared/schema";
 import OpenAI from "openai";
 import Stripe from "stripe";
-import { validateAllApiKeys, validateStripeKeys } from "./api-validation";
+import { validateAllApiKeys, validateStripeKeys, validateOpenAIKey } from "./api-validation";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
@@ -987,8 +987,14 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
           liveApiTesting: true,
           permissionVerification: true
         },
+        resourceProtection: {
+          stripeEndpointsProtected: true,
+          openaiEndpointsProtected: true,
+          premiumFeaturesGated: true,
+          sensitiveOperationsValidated: true
+        },
         timestamp: new Date().toISOString(),
-        auditVersion: "1.0"
+        auditVersion: "1.1"
       };
 
       res.json({
@@ -1002,6 +1008,55 @@ Provide personalized, empathetic responses. Be encouraging, practical, and speci
       res.status(500).json({
         success: false,
         message: "Security audit failed",
+        error: error.message
+      });
+    }
+  });
+
+  // Resource protection status endpoint
+  app.get("/api/resource-status", async (req, res) => {
+    try {
+      const [stripeValidation, openaiValidation] = await Promise.all([
+        validateStripeKeys(),
+        validateOpenAIKey()
+      ]);
+
+      const resourceStatus = {
+        stripe: {
+          available: stripeValidation.valid,
+          endpoints: ['/api/create-subscription', '/api/stripe-webhook', '/api/create-payment-intent'],
+          error: stripeValidation.error || null
+        },
+        openai: {
+          available: openaiValidation.valid,
+          endpoints: ['/api/coaching', '/api/chat', '/api/ai-insights'],
+          error: openaiValidation.error || null
+        },
+        premium: {
+          available: true,
+          endpoints: ['/api/advanced-analytics', '/api/voice-commands', '/api/premium-insights'],
+          requiresSubscription: true
+        },
+        general: {
+          available: true,
+          endpoints: ['/api/habits', '/api/mood', '/api/progress'],
+          publicAccess: true
+        }
+      };
+
+      res.json({
+        timestamp: new Date().toISOString(),
+        resources: resourceStatus,
+        summary: {
+          paymentProcessing: stripeValidation.valid,
+          aiFeatures: openaiValidation.valid,
+          coreFeatures: true
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: "Resource status check failed",
         error: error.message
       });
     }
