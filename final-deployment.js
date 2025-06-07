@@ -6,34 +6,39 @@ import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-async function esbuildDeployment() {
+async function finalDeployment() {
   try {
-    console.log('Creating esbuild deployment...');
+    console.log('Creating final deployment build...');
     
     // Clean dist
     await fs.rm(path.join(__dirname, 'dist'), { recursive: true, force: true });
     await fs.mkdir(path.join(__dirname, 'dist/public'), { recursive: true });
     
-    // Build frontend with esbuild
-    console.log('Building frontend with esbuild...');
+    // Build CSS first by extracting from the source
+    console.log('Processing CSS...');
+    const cssContent = await fs.readFile(path.join(__dirname, 'client/src/index.css'), 'utf-8');
+    await fs.writeFile(path.join(__dirname, 'dist/public/main.css'), cssContent);
+    
+    // Build React app with esbuild
+    console.log('Building React app...');
     await build({
-      entryPoints: ['client/src/main.tsx'],
+      entryPoints: [path.join(__dirname, 'client/src/main.tsx')],
       bundle: true,
-      outdir: 'dist/public',
+      outfile: path.join(__dirname, 'dist/public/main.js'),
       format: 'esm',
       target: 'es2020',
       minify: true,
-      splitting: true,
+      jsx: 'automatic',
       loader: {
         '.tsx': 'tsx',
         '.ts': 'ts',
         '.jsx': 'jsx',
         '.js': 'js',
         '.css': 'css',
-        '.png': 'file',
-        '.jpg': 'file',
-        '.jpeg': 'file',
-        '.svg': 'file',
+        '.png': 'dataurl',
+        '.jpg': 'dataurl',
+        '.jpeg': 'dataurl',
+        '.svg': 'text',
       },
       define: {
         'process.env.NODE_ENV': '"production"',
@@ -46,15 +51,7 @@ async function esbuildDeployment() {
         '@shared': path.resolve(__dirname, 'shared'),
         '@assets': path.resolve(__dirname, 'attached_assets'),
       },
-      external: ['react', 'react-dom'],
-      inject: ['./esbuild-shim.js']
     });
-    
-    // Create React shim for esbuild
-    const shimContent = `import React from 'react';
-import ReactDOM from 'react-dom';
-export { React, ReactDOM };`;
-    await fs.writeFile(path.join(__dirname, 'esbuild-shim.js'), shimContent);
     
     // Create production HTML
     const prodHtml = `<!DOCTYPE html>
@@ -98,36 +95,53 @@ export { React, ReactDOM };`;
     
     // Build backend
     console.log('Building backend...');
-    execSync('npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist', {
-      stdio: 'inherit',
-      cwd: __dirname,
-      env: {
-        ...process.env,
-        NODE_ENV: 'production'
+    await build({
+      entryPoints: [path.join(__dirname, 'server/index.ts')],
+      bundle: true,
+      outfile: path.join(__dirname, 'dist/index.js'),
+      platform: 'node',
+      format: 'esm',
+      target: 'node18',
+      packages: 'external',
+      define: {
+        'process.env.NODE_ENV': '"production"'
       }
     });
     
     // Copy shared schema
     await fs.cp(path.join(__dirname, 'shared'), path.join(__dirname, 'dist/shared'), { recursive: true });
     
-    // Clean up shim
-    await fs.rm(path.join(__dirname, 'esbuild-shim.js'), { force: true });
+    // Create package.json for deployment
+    const deployPackage = {
+      "type": "module",
+      "main": "index.js",
+      "scripts": {
+        "start": "node index.js"
+      },
+      "dependencies": {
+        "express": "^4.18.2",
+        "drizzle-orm": "^0.29.0",
+        "@neondatabase/serverless": "^0.6.0"
+      }
+    };
+    await fs.writeFile(path.join(__dirname, 'dist/package.json'), JSON.stringify(deployPackage, null, 2));
     
-    console.log('✅ ESBuild deployment completed successfully!');
+    console.log('✅ Final deployment build completed successfully!');
     
-    // Verify build outputs
+    // Verify outputs
     const publicFiles = await fs.readdir(path.join(__dirname, 'dist/public'));
     const distFiles = await fs.readdir(path.join(__dirname, 'dist'));
     
-    console.log('Frontend files:', publicFiles);
-    console.log('Backend files:', distFiles);
+    console.log('Frontend files:', publicFiles.join(', '));
+    console.log('Backend files:', distFiles.filter(f => f.endsWith('.js')).join(', '));
     
     return true;
     
   } catch (error) {
-    console.error('❌ ESBuild deployment failed:', error.message);
+    console.error('❌ Final deployment failed:', error.message);
+    console.error(error.stack);
     return false;
   }
 }
 
-esbuildDeployment();
+finalDeployment();
