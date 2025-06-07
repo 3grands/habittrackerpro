@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# Start the HabitFlow development server
-echo "Starting HabitFlow development server..."
-
 # Kill any existing processes
-pkill -f "tsx.*server" || true
-pkill -f "node.*server" || true
+pkill -f "vite" 2>/dev/null || true
+pkill -f "tsx.*server" 2>/dev/null || true
+sleep 2
 
-# Start the Express server with Vite middleware
-NODE_ENV=development exec tsx server/index.ts
+# Start the Express server with integrated Vite
+NODE_ENV=development tsx server/index.ts
