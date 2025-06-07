@@ -101,6 +101,139 @@ app.delete('/api/habits/:id', (req, res) => {
   }
 });
 
+// Toggle habit completion for today
+app.post('/api/habits/:id/toggle', (req, res) => {
+  try {
+    const habitId = parseInt(req.params.id);
+    const habit = habits.find(h => h.id === habitId && h.isActive);
+    if (!habit) return res.status(404).json({ error: 'Habit not found' });
+    
+    habit.isCompletedToday = !habit.isCompletedToday;
+    habit.todayProgress = habit.isCompletedToday ? habit.goal : 0;
+    
+    // Update streak
+    if (habit.isCompletedToday) {
+      habit.streak += 1;
+    } else {
+      habit.streak = Math.max(0, habit.streak - 1);
+    }
+    
+    res.json({
+      id: Date.now(),
+      habitId,
+      date: new Date().toISOString().split('T')[0],
+      progress: habit.todayProgress,
+      isCompleted: habit.isCompletedToday
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to toggle habit' });
+  }
+});
+
+// Get habit statistics
+app.get('/api/habits/stats', (req, res) => {
+  try {
+    const activeHabits = habits.filter(h => h.isActive);
+    const todayCompleted = activeHabits.filter(h => h.isCompletedToday).length;
+    const totalStreak = activeHabits.reduce((sum, h) => sum + h.streak, 0);
+    
+    // Generate weekly progress (mock data for demo)
+    const weeklyProgress = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const completed = Math.floor(Math.random() * activeHabits.length);
+      weeklyProgress.push({
+        date: dateStr,
+        completed,
+        total: activeHabits.length
+      });
+    }
+    
+    res.json({
+      todayProgress: `${todayCompleted}/${activeHabits.length}`,
+      totalHabits: activeHabits.length,
+      totalStreak,
+      todayCompleted,
+      weeklyProgress,
+      completionRate: activeHabits.length > 0 ? Math.round((todayCompleted / activeHabits.length) * 100) : 0
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+// Get latest coaching tip
+app.get('/api/coaching/latest', (req, res) => {
+  try {
+    const tips = [
+      "Start small and be consistent. Focus on building one habit at a time for lasting success!",
+      "Track your progress daily to stay motivated and see how far you've come.",
+      "When you miss a day, don't break the chain - just get back on track tomorrow.",
+      "Celebrate small wins! Every completed habit is a step toward your goals.",
+      "Link new habits to existing routines to make them easier to remember."
+    ];
+    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+    res.json({ tip: randomTip });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch coaching tip' });
+  }
+});
+
+// Post AI coaching advice request
+app.post('/api/coaching/advice', (req, res) => {
+  try {
+    const activeHabits = habits.filter(h => h.isActive);
+    const todayCompleted = activeHabits.filter(h => h.isCompletedToday).length;
+    
+    // Generate contextual advice based on progress
+    let advice;
+    const completionRate = activeHabits.length > 0 ? (todayCompleted / activeHabits.length) : 0;
+    
+    if (completionRate >= 0.8) {
+      advice = "Outstanding progress! You're building incredible momentum. Keep this consistency going and consider adding a new challenge to push yourself further.";
+    } else if (completionRate >= 0.5) {
+      advice = "Good work on maintaining your habits! Focus on the ones you missed today and try to complete them tomorrow. Small consistent actions lead to big results.";
+    } else {
+      advice = "Every journey starts with a single step. Pick one habit to focus on today and give it your full attention. Building habits is about progress, not perfection.";
+    }
+    
+    res.json({ advice });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate advice' });
+  }
+});
+
+// Basic mood tracking
+app.get('/api/mood/entries', (req, res) => {
+  try {
+    // Return sample mood data
+    const moodEntries = [
+      { id: 1, date: new Date().toISOString().split('T')[0], mood: 'good', notes: 'Feeling productive today' },
+      { id: 2, date: new Date(Date.now() - 86400000).toISOString().split('T')[0], mood: 'great', notes: 'Completed all habits!' }
+    ];
+    res.json(moodEntries);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch mood entries' });
+  }
+});
+
+app.post('/api/mood/entries', (req, res) => {
+  try {
+    const { mood, notes } = req.body;
+    const entry = {
+      id: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      mood,
+      notes: notes || ''
+    };
+    res.status(201).json(entry);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create mood entry' });
+  }
+});
+
 // Serve frontend files or development placeholder
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) {
