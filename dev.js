@@ -1,35 +1,40 @@
-#!/usr/bin/env node
-
-// Development server starter that runs the Express server with Vite middleware
 import { spawn } from 'child_process';
 
-console.log('Starting HabitFlow development server...');
-
-const server = spawn('tsx', ['server/index.ts'], {
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    NODE_ENV: 'development'
+// Kill any conflicting processes
+const killProcesses = () => {
+  try {
+    spawn('pkill', ['-f', 'vite'], { stdio: 'inherit' });
+    spawn('pkill', ['-f', 'tsx.*server'], { stdio: 'inherit' });
+  } catch (e) {
+    // Ignore errors
   }
-});
+};
 
-server.on('error', (err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+killProcesses();
 
-server.on('close', (code) => {
-  console.log(`Server exited with code ${code}`);
-  process.exit(code);
-});
+// Wait a moment for cleanup
+setTimeout(() => {
+  // Start the Express server with integrated Vite
+  const server = spawn('tsx', ['server/index.ts'], {
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      NODE_ENV: 'development'
+    }
+  });
 
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down gracefully...');
-  server.kill('SIGTERM');
-});
+  server.on('error', (err) => {
+    console.error('Server startup failed:', err);
+    process.exit(1);
+  });
 
-process.on('SIGINT', () => {
-  console.log('Received SIGINT, shutting down gracefully...');
-  server.kill('SIGINT');
-});
+  // Handle graceful shutdown
+  const cleanup = () => {
+    server.kill('SIGTERM');
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', cleanup);
+  process.on('SIGINT', cleanup);
+  process.on('exit', cleanup);
+}, 1000);

@@ -1,22 +1,22 @@
-#!/usr/bin/env node
+import { spawn, exec } from 'child_process';
+import { promisify } from 'util';
 
-import { spawn } from 'child_process';
-import { createServer } from 'http';
+const execAsync = promisify(exec);
 
-// Kill any existing Vite processes
 function killVite() {
   try {
-    const { execSync } = require('child_process');
-    execSync('pkill -f "vite" 2>/dev/null || true', { stdio: 'ignore' });
+    exec('pkill -f "vite" 2>/dev/null || true');
+    exec('pkill -f "node.*vite" 2>/dev/null || true');
   } catch (e) {
-    // Ignore errors
+    // Ignore
   }
 }
 
-// Start the Express server with Vite middleware
 function startServer() {
-  console.log('Starting HabitFlow development server on port 5000...');
+  // Kill any existing Vite processes
+  killVite();
   
+  // Start Express server with integrated Vite
   const server = spawn('tsx', ['server/index.ts'], {
     stdio: 'inherit',
     env: {
@@ -26,46 +26,43 @@ function startServer() {
   });
 
   server.on('error', (err) => {
-    console.error('Server error:', err);
-    setTimeout(startServer, 2000);
+    console.error('Express server error:', err);
+    setTimeout(startServer, 2000); // Restart after 2 seconds
   });
 
-  server.on('close', (code) => {
-    console.log(`Server exited with code ${code}, restarting...`);
-    setTimeout(startServer, 1000);
+  server.on('exit', (code) => {
+    if (code !== 0) {
+      console.log('Express server exited, restarting...');
+      setTimeout(startServer, 1000);
+    }
   });
 
   return server;
 }
 
-// Monitor and restart if needed
 function monitor() {
-  killVite();
-  const server = startServer();
-  
-  // Check if Vite starts again and kill it
+  // Check every 5 seconds if Vite is running standalone
   setInterval(() => {
-    try {
-      const { execSync } = require('child_process');
-      const viteProcesses = execSync('ps aux | grep "vite" | grep -v grep | wc -l', { encoding: 'utf8' });
-      if (parseInt(viteProcesses) > 0) {
-        console.log('Detected Vite process, killing...');
+    exec('pgrep -f "vite" | grep -v tsx', (error, stdout) => {
+      if (stdout.trim()) {
+        console.log('Detected standalone Vite, killing and restarting Express server...');
         killVite();
       }
-    } catch (e) {
-      // Ignore errors
-    }
+    });
   }, 5000);
-
-  process.on('SIGTERM', () => {
-    server.kill('SIGTERM');
-    process.exit(0);
-  });
-
-  process.on('SIGINT', () => {
-    server.kill('SIGINT');
-    process.exit(0);
-  });
 }
 
+// Start monitoring and server
 monitor();
+const server = startServer();
+
+// Handle cleanup
+process.on('SIGTERM', () => {
+  server.kill();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  server.kill();
+  process.exit(0);
+});

@@ -1,12 +1,17 @@
+#!/usr/bin/env node
+
+// Override Vite with Express server
 import { execSync } from 'child_process';
 
 try {
-  console.log('Starting HabitFlow server...');
-  execSync('NODE_ENV=development npx tsx server/index.ts', {
-    stdio: 'inherit',
-    cwd: process.cwd()
-  });
-} catch (error) {
-  console.error('Server startup failed:', error.message);
-  process.exit(1);
+  // Kill standalone Vite if running
+  execSync('pkill -f "vite" 2>/dev/null || true', { stdio: 'ignore' });
+} catch (e) {
+  // Ignore errors
 }
+
+// Import and start Express server directly
+import('./server/index.js').catch(err => {
+  console.error('Failed to start Express server:', err);
+  process.exit(1);
+});
