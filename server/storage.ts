@@ -256,16 +256,134 @@ export class MemStorage implements IStorage {
     this.moodEntries = new Map();
     this.chatMessages = new Map();
     this.reminders = new Map();
-    this.currentUserId = 1;
-    this.currentHabitId = 1;
+    this.currentUserId = 2;
+    this.currentHabitId = 7;
     this.currentCompletionId = 1;
-    this.currentTipId = 1;
+    this.currentTipId = 3;
     this.currentMoodId = 1;
     this.currentChatId = 1;
     this.currentReminderId = 1;
 
-    // Create default user for demo
-    this.createUser({ username: "demo", password: "demo" });
+    // Initialize with sample data
+    this.initializeSampleData();
+  }
+
+  private initializeSampleData() {
+    // Create default user
+    const user: User = {
+      id: 1,
+      username: "demo",
+      password: "demo"
+    };
+    this.users.set(1, user);
+
+    // Create sample habits
+    const sampleHabits: Habit[] = [
+      {
+        id: 1,
+        userId: 1,
+        name: "Morning Exercise",
+        category: "health",
+        frequency: "daily",
+        goal: 1,
+        unit: "times",
+        reminderTime: null,
+        streak: 5,
+        isActive: true,
+        createdAt: new Date("2025-06-06T23:26:36.403Z")
+      },
+      {
+        id: 2,
+        userId: 1,
+        name: "Drink 8 glasses of water",
+        category: "health",
+        frequency: "daily",
+        goal: 8,
+        unit: "glasses",
+        reminderTime: null,
+        streak: 3,
+        isActive: true,
+        createdAt: new Date("2025-06-06T23:43:48.047Z")
+      },
+      {
+        id: 3,
+        userId: 1,
+        name: "10-minute meditation",
+        category: "mindfulness",
+        frequency: "daily",
+        goal: 10,
+        unit: "minutes",
+        reminderTime: null,
+        streak: 7,
+        isActive: true,
+        createdAt: new Date("2025-06-06T23:43:48.047Z")
+      },
+      {
+        id: 4,
+        userId: 1,
+        name: "Read for 30 minutes",
+        category: "learning",
+        frequency: "daily",
+        goal: 30,
+        unit: "minutes",
+        reminderTime: null,
+        streak: 2,
+        isActive: true,
+        createdAt: new Date("2025-06-06T23:43:48.047Z")
+      },
+      {
+        id: 5,
+        userId: 1,
+        name: "50 push-ups",
+        category: "fitness",
+        frequency: "daily",
+        goal: 50,
+        unit: "times",
+        reminderTime: null,
+        streak: 1,
+        isActive: true,
+        createdAt: new Date("2025-06-06T23:43:48.047Z")
+      },
+      {
+        id: 6,
+        userId: 1,
+        name: "Write in gratitude journal",
+        category: "mindfulness",
+        frequency: "daily",
+        goal: 1,
+        unit: "times",
+        reminderTime: null,
+        streak: 4,
+        isActive: true,
+        createdAt: new Date("2025-06-06T23:43:48.047Z")
+      }
+    ];
+
+    sampleHabits.forEach(habit => {
+      this.habits.set(habit.id, habit);
+    });
+
+    // Create sample coaching tips
+    const sampleTips: CoachingTip[] = [
+      {
+        id: 1,
+        userId: 1,
+        tip: "Start small and build momentum. Even 5 minutes of exercise is better than none.",
+        category: "motivation",
+        createdAt: new Date()
+      },
+      {
+        id: 2,
+        userId: 1,
+        tip: "Track your water intake to stay hydrated throughout the day.",
+        category: "health",
+        createdAt: new Date()
+      }
+    ];
+
+    sampleTips.forEach(tip => {
+      this.coachingTips.set(tip.id, tip);
+    });
   }
 
   async getUser(id: number): Promise<User | undefined> {
