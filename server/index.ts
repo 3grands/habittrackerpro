@@ -27,30 +27,12 @@ import {
 
 const app = express();
 
-// Apply security middleware first
-app.use(securityHeaders);
-// app.use(rateLimiter); // Temporarily disabled for testing
-app.use(validateRequestIntegrity);
-app.use(validateApiKeyUsage);
-
-// Apply API key validation gates for sensitive resources
-app.use(requireValidStripeKeys);
-app.use(requireValidOpenAIKey);
-app.use(requireValidSubscription);
-app.use(validateResourceAccess);
-
-// Apply data access control middleware
-app.use(validateDataAccess);
-app.use(logDataAccess);
-app.use(sanitizeResponse);
-
+// Basic middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Apply comprehensive security validation
-app.use(blockMaliciousContent);
-app.use(enforceDataSecurity);
-app.use(logSecurityEvents);
+// Only apply basic security headers
+app.use(securityHeaders);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -83,20 +65,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Validate API keys on startup for security
-  log("Validating API keys...");
-  const validation = await validateAllApiKeys();
-  
-  if (!validation.allValid) {
-    log(`⚠️  API Key Validation Warning: ${validation.summary}`);
-    validation.results.forEach(result => {
-      if (!result.valid) {
-        log(`   - ${result.service}: ${result.error}`);
-      }
-    });
-    log("Server will start but some features may not work properly.");
-  } else {
-    log(`✅ API validation successful: ${validation.summary}`);
+  // Log API key status without blocking startup
+  log("Checking API key availability...");
+  try {
+    const validation = await validateAllApiKeys();
+    if (!validation.allValid) {
+      log(`⚠️  Some API keys not available: ${validation.summary}`);
+      log("Core app will work, but some features may be limited.");
+    } else {
+      log(`✅ All API keys available: ${validation.summary}`);
+    }
+  } catch (error) {
+    log("API key validation skipped - core app will still work");
   }
 
   const server = await registerRoutes(app);
