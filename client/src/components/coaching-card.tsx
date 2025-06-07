@@ -9,7 +9,7 @@ export function CoachingCard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: tipData } = useQuery<CoachingTip>({
+  const { data: tipData } = useQuery<{ tip: string }>({
     queryKey: ["/api/coaching/latest"],
   });
 
