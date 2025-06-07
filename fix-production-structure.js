@@ -148,8 +148,10 @@ import('https://esm.sh/react@18').then(React => {
       "type": "module",
       "main": "index.js",
       "scripts": {
-        "start": "node index.js",
-        "preview": "node index.js"
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview --port=$PORT",
+        "start": "node index.js"
       }
     };
     
