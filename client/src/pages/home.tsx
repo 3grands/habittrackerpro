@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, ChartLine, Brain, Settings, Home, Heart, Wifi, WifiOff, Zap, Crown, Users, Store, BarChart3 } from "lucide-react";
+import { Plus, ChartLine, Brain, Settings, Home, Heart, Wifi, WifiOff, Zap, Crown, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HabitCard } from "@/components/habit-card";
@@ -253,66 +253,44 @@ export default function HomePage() {
           <Button
             variant="ghost"
             size="sm"
-            className={`flex flex-col items-center py-2 px-2 ${location === "/" ? "text-primary" : "text-gray-400"}`}
+            className={`flex flex-col items-center py-2 px-3 ${location === "/" ? "text-primary" : "text-gray-400"}`}
             asChild
           >
             <Link href="/">
-              <Home className="w-4 h-4 mb-1" />
+              <Home className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium">Home</span>
             </Link>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className={`flex flex-col items-center py-2 px-2 ${location === "/marketplace" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
-            asChild
-          >
-            <Link href="/marketplace">
-              <Store className="w-4 h-4 mb-1" />
-              <span className="text-xs">Store</span>
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`flex flex-col items-center py-2 px-2 ${location === "/community" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
-            asChild
-          >
-            <Link href="/community">
-              <Users className="w-4 h-4 mb-1" />
-              <span className="text-xs">Community</span>
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`flex flex-col items-center py-2 px-2 ${location === "/analytics" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
+            className={`flex flex-col items-center py-2 px-3 ${location === "/analytics" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
             asChild
           >
             <Link href="/analytics">
-              <BarChart3 className="w-4 h-4 mb-1" />
+              <BarChart3 className="w-5 h-5 mb-1" />
               <span className="text-xs">Analytics</span>
             </Link>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className={`flex flex-col items-center py-2 px-2 ${location === "/coaching" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
+            className={`flex flex-col items-center py-2 px-3 ${location === "/coaching" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
             asChild
           >
             <Link href="/coaching">
-              <Brain className="w-4 h-4 mb-1" />
+              <Brain className="w-5 h-5 mb-1" />
               <span className="text-xs">Coach</span>
             </Link>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className={`flex flex-col items-center py-2 px-2 ${location === "/pricing" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
+            className={`flex flex-col items-center py-2 px-3 ${location === "/pricing" ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
             asChild
           >
             <Link href="/pricing">
-              <Crown className="w-4 h-4 mb-1" />
+              <Crown className="w-5 h-5 mb-1" />
               <span className="text-xs">Pro</span>
             </Link>
           </Button>
