@@ -48,8 +48,8 @@ export function AddHabitModal({ open, onOpenChange }: AddHabitModalProps) {
   });
   
   const habitCount = Array.isArray(habits) ? habits.length : 0;
-  const maxHabits = subscription?.features?.max_habits || 3;
-  const isAtLimit = habitCount >= maxHabits && (!subscription?.plan || subscription?.plan === "free");
+  const maxHabits = (subscription as any)?.features?.max_habits || 3;
+  const isAtLimit = habitCount >= maxHabits && (!(subscription as any)?.plan || (subscription as any)?.plan === "free");
 
   const form = useForm<AddHabitForm>({
     resolver: zodResolver(addHabitSchema),
