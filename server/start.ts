@@ -1,16 +1,12 @@
-import app from "./index.js";
-import { setupVite, serveStatic, log } from "./vite.js";
+import app from "./app";
 
-const PORT = parseInt(process.env.PORT || "5000");
-
-// Only start the server if we are not in "build mode"
 if (process.env.SKIP_SERVER_START !== "true") {
-  const startServer = async () => {
-    try {
-      log("Starting HabitFlow API server...");
-      
-      const server = app.listen(PORT, "0.0.0.0", async () => {
-        console.log(`🚀 Server running on port ${PORT}`);
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
         
         // Setup Vite after server is listening to avoid startup delays
         if (app.get("env") === "development") {
