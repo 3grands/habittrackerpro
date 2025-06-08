@@ -212,14 +212,14 @@ async function setupViteServer() {
   app.use(vite.middlewares);
 }
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
     await setupViteServer();
     
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`HabitFlow running on port ${PORT}`);
+      console.log(`Server running on port ${PORT}`);
       console.log(`Frontend: http://localhost:${PORT}`);
       console.log(`API: http://localhost:${PORT}/api/habits`);
     });
