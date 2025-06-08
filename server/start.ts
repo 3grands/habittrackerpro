@@ -1,4 +1,4 @@
-import app from "./app";
+import app from "./index";
 
 if (process.env.SKIP_SERVER_START !== "true") {
   const PORT = process.env.PORT || 5000;
