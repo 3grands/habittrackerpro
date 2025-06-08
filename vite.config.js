@@ -1,5 +1,9 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import react from plugins: [
+  react(),
+  // cartographer(), ← REMOVE THIS
+],
+;
 import path from 'path';
 
 export default defineConfig({
