@@ -49,35 +49,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Only start server if not in build mode
-if (process.env.NODE_ENV !== "build") {
-  (async () => {
-    log("Starting HabitFlow API server...");
-    
-    const server = await registerRoutes(app);
+// Setup routes and error handling but don't start server
+(async () => {
+  const server = await registerRoutes(app);
 
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      res.status(status).json({ message });
-    });
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    res.status(status).json({ message });
+  });
+})();
 
-    const PORT = parseInt(process.env.PORT || "5000");
-    server.listen(PORT, "0.0.0.0", async () => {
-      console.log(`Server running on port ${PORT}`);
-      
-      // Setup Vite after server is listening to avoid startup delays
-      if (app.get("env") === "development") {
-        try {
-          await setupVite(app, server);
-          log("Vite development server integrated");
-        } catch (error) {
-          log("Vite setup failed, serving static fallback");
-          serveStatic(app);
-        }
-      } else {
-        serveStatic(app);
-      }
-    });
-  })();
-}
+export default app;
