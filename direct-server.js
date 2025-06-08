@@ -75,19 +75,38 @@ app.patch('/api/habits/:id', async (req, res) => {
     const habitId = parseInt(req.params.id);
     const updates = req.body;
     
-    // Whitelist allowed fields to prevent SQL injection
-    const allowedFields = ['name', 'category', 'frequency', 'goal', 'unit', 'streak', 'is_active', 'reminder_time'];
-    const fields = Object.keys(updates).filter(k => k !== 'id' && allowedFields.includes(k));
+    // Use explicit field mapping to prevent SQL injection
+    const fieldMap = {
+      'name': 'name',
+      'category': 'category',
+      'frequency': 'frequency',
+      'goal': 'goal',
+      'unit': 'unit',
+      'streak': 'streak',
+      'is_active': 'is_active',
+      'reminder_time': 'reminder_time'
+    };
     
-    if (fields.length === 0) {
+    const setClauses = [];
+    const values = [];
+    let paramIndex = 1;
+    
+    for (const [key, value] of Object.entries(updates)) {
+      if (key !== 'id' && fieldMap[key]) {
+        setClauses.push(`${fieldMap[key]} = $${paramIndex}`);
+        values.push(value);
+        paramIndex++;
+      }
+    }
+    
+    if (setClauses.length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
     
-    const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
-    const values = [...fields.map(f => updates[f]), habitId];
+    values.push(habitId);
     
     const result = await queryWithRetry(
-      `UPDATE habits SET ${setClause} WHERE id = $${fields.length + 1} RETURNING *`,
+      `UPDATE habits SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
       values
     );
     

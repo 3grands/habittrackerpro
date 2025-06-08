@@ -79,20 +79,31 @@ app.patch('/api/habits/:id', async (req, res) => {
     const habitId = parseInt(req.params.id);
     const updates = req.body;
     
-    // Build dynamic update query
-    const fields = [];
+    // Use explicit field mapping to prevent SQL injection
+    const fieldMap = {
+      'name': 'name',
+      'category': 'category',
+      'frequency': 'frequency',
+      'goal': 'goal',
+      'unit': 'unit',
+      'streak': 'streak',
+      'is_active': 'is_active',
+      'reminder_time': 'reminder_time'
+    };
+    
+    const setClauses = [];
     const values = [];
     let paramIndex = 1;
     
     for (const [key, value] of Object.entries(updates)) {
-      if (key !== 'id') {
-        fields.push(`${key} = $${paramIndex}`);
+      if (key !== 'id' && fieldMap[key]) {
+        setClauses.push(`${fieldMap[key]} = $${paramIndex}`);
         values.push(value);
         paramIndex++;
       }
     }
     
-    if (fields.length === 0) {
+    if (setClauses.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
     
@@ -100,7 +111,7 @@ app.patch('/api/habits/:id', async (req, res) => {
     
     client = await pool.connect();
     const result = await client.query(
-      `UPDATE habits SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      `UPDATE habits SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
       values
     );
     
