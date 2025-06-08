@@ -1,4 +1,3 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -18,9 +17,17 @@ export default defineConfig({
     emptyOutDir: true,
     minify: true,
     sourcemap: false,
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  define: {
+    'process.env.NODE_ENV': '"production"'
   },
   mode: 'production',
-  server: {
-    port: 3001, // Use different port to avoid conflict
-  }
+  clearScreen: false,
+  logLevel: 'warn',
 });
