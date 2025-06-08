@@ -75,9 +75,12 @@ app.patch('/api/habits/:id', async (req, res) => {
     const habitId = parseInt(req.params.id);
     const updates = req.body;
     
-    const fields = Object.keys(updates).filter(k => k !== 'id');
+    // Whitelist allowed fields to prevent SQL injection
+    const allowedFields = ['name', 'category', 'frequency', 'goal', 'unit', 'streak', 'is_active', 'reminder_time'];
+    const fields = Object.keys(updates).filter(k => k !== 'id' && allowedFields.includes(k));
+    
     if (fields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
+      return res.status(400).json({ error: 'No valid fields to update' });
     }
     
     const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
