@@ -14,7 +14,7 @@ try {
 
   // Build frontend
   console.log('📦 Building frontend...');
-  execSync('vite build', { stdio: 'inherit' });
+  execSync('vite build --config vite.build.config.ts', { stdio: 'inherit' });
 
   // Build backend with proper environment
   console.log('🔧 Building backend...');
