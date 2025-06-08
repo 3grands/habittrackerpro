@@ -25,31 +25,44 @@ function deploymentSolution() {
 
     // Build React frontend using esbuild (completely bypasses Vite and cartographer)
     console.log('Building frontend...');
-    const buildCommand = [
-      'npx esbuild client/src/main.tsx',
-      '--bundle',
-      '--outfile=dist/public/main.js',
-      '--format=esm',
-      '--jsx=automatic',
-      '--define:process.env.NODE_ENV="production"',
-      '--loader:.tsx=tsx',
-      '--loader:.ts=ts',
-      '--loader:.jsx=jsx',
-      '--loader:.js=js',
-      '--loader:.css=css',
-      '--loader:.png=file',
-      '--loader:.jpg=file',
-      '--loader:.jpeg=file',
-      '--loader:.svg=file',
-      '--target=es2020',
-      '--minify',
-      `--resolve-dir=${__dirname}`,
-      '--alias:@=./client/src',
-      '--alias:@shared=./shared',
-      '--alias:@assets=./attached_assets'
-    ].join(' ');
+    
+    // Create esbuild config file to handle aliases properly
+    const esbuildConfig = `
+import { build } from 'esbuild';
+import { resolve } from 'path';
 
-    execSync(buildCommand, { stdio: 'inherit' });
+await build({
+  entryPoints: ['client/src/main.tsx'],
+  bundle: true,
+  outfile: 'dist/public/main.js',
+  format: 'esm',
+  jsx: 'automatic',
+  define: {
+    'process.env.NODE_ENV': '"production"'
+  },
+  loader: {
+    '.tsx': 'tsx',
+    '.ts': 'ts',
+    '.jsx': 'jsx',
+    '.js': 'js',
+    '.css': 'css',
+    '.png': 'file',
+    '.jpg': 'file',
+    '.jpeg': 'file',
+    '.svg': 'file'
+  },
+  target: 'es2020',
+  minify: true,
+  alias: {
+    '@': resolve('./client/src'),
+    '@shared': resolve('./shared'),
+    '@assets': resolve('./attached_assets')
+  }
+});
+`;
+
+    writeFileSync('esbuild.config.mjs', esbuildConfig);
+    execSync('node esbuild.config.mjs', { stdio: 'inherit' });
 
     // Build backend
     console.log('Building backend...');
