@@ -6,9 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && cross-env SKIP_SERVER_START=true esbuild server/start.ts --platform=node --bundle --format=esm --outfile=dist/server.js",
-    "preview": "vite preview --port=$PORT"
-  }
-
+    "preview": "vite preview --port=$PORT",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push"
