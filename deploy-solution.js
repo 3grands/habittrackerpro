@@ -1,87 +1,125 @@
 #!/usr/bin/env node
 
 import { execSync } from 'child_process';
-import { existsSync, rmSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync, copyFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function deploymentSolution() {
-  console.log('Resolving deployment build...');
+  console.log('Creating deployment build without cartographer dependency...');
 
   try {
-    // Clean build directory
+    // Clean previous builds
     if (existsSync('dist')) {
       rmSync('dist', { recursive: true, force: true });
     }
-    mkdirSync('dist', { recursive: true });
+    mkdirSync('dist/public', { recursive: true });
 
-    // Create deployment-specific vite config that avoids server imports
-    const deployConfig = `
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
-
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"), 
-      "@assets": path.resolve(import.meta.dirname, "attached_assets"),
-    },
-  },
-  root: path.resolve(import.meta.dirname, "client"),
-  build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
-    emptyOutDir: true,
-    minify: true,
-    sourcemap: false,
-  },
-  mode: 'production',
-  server: {
-    port: 3001
-  }
-});
-`;
-
-    writeFileSync('vite.deploy.config.js', deployConfig);
-
-    // Build with environment that prevents server startup
-    console.log('Building frontend...');
-    execSync('VITE_BUILD_ONLY=true NODE_ENV=production vite build --config vite.deploy.config.js', { 
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        NODE_ENV: 'production',
-        VITE_BUILD_ONLY: 'true',
-        PORT: '3001',
-        XDG_CONFIG_HOME: process.env.HOME + '/.config'
-      }
-    });
-
-    console.log('Building backend...');
-    execSync('NODE_ENV=build esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist', { 
+    // Build CSS first using Tailwind
+    console.log('Building styles...');
+    execSync('npx tailwindcss -i ./client/src/index.css -o ./dist/public/main.css --minify', { 
       stdio: 'inherit'
     });
 
-    // Clean up config
-    rmSync('vite.deploy.config.js');
+    // Build React frontend using esbuild (completely bypasses Vite and cartographer)
+    console.log('Building frontend...');
+    const buildCommand = [
+      'npx esbuild client/src/main.tsx',
+      '--bundle',
+      '--outfile=dist/public/main.js',
+      '--format=esm',
+      '--jsx=automatic',
+      '--define:process.env.NODE_ENV="production"',
+      '--loader:.tsx=tsx',
+      '--loader:.ts=ts',
+      '--loader:.jsx=jsx',
+      '--loader:.js=js',
+      '--loader:.css=css',
+      '--loader:.png=file',
+      '--loader:.jpg=file',
+      '--loader:.jpeg=file',
+      '--loader:.svg=file',
+      '--target=es2020',
+      '--minify',
+      `--resolve-dir=${__dirname}`,
+      '--alias:@=./client/src',
+      '--alias:@shared=./shared',
+      '--alias:@assets=./attached_assets'
+    ].join(' ');
 
-    // Verify build
-    if (existsSync('dist/public/index.html') && existsSync('dist/index.js')) {
-      console.log('Deployment build resolved successfully');
-      console.log('Frontend built to dist/public/');
-      console.log('Backend built to dist/index.js');
-      return true;
-    } else {
-      throw new Error('Build verification failed');
+    execSync(buildCommand, { stdio: 'inherit' });
+
+    // Build backend
+    console.log('Building backend...');
+    execSync('npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js --target=node18', { 
+      stdio: 'inherit'
+    });
+
+    // Create optimized HTML
+    const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HabitFlow - Build Better Habits</title>
+    <meta name="description" content="Transform your daily routines with HabitFlow's intelligent habit tracking and AI-powered coaching." />
+    <meta name="keywords" content="habit tracker, productivity, personal development, goal setting" />
+    <meta property="og:title" content="HabitFlow - Build Better Habits" />
+    <meta property="og:description" content="Transform your daily routines with intelligent habit tracking" />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="/main.css" />
+    <link rel="preload" href="/main.js" as="script" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>`;
+
+    writeFileSync('dist/public/index.html', html);
+
+    // Create package.json for deployment
+    const deployPackage = {
+      "name": "habitflow-deploy",
+      "version": "1.0.0",
+      "type": "module",
+      "main": "index.js",
+      "scripts": {
+        "start": "node index.js"
+      },
+      "engines": {
+        "node": ">=18.0.0"
+      }
+    };
+
+    writeFileSync('dist/package.json', JSON.stringify(deployPackage, null, 2));
+
+    // Verify all components exist
+    const requiredFiles = [
+      'dist/public/index.html',
+      'dist/public/main.js', 
+      'dist/public/main.css',
+      'dist/index.js',
+      'dist/package.json'
+    ];
+
+    const missing = requiredFiles.filter(file => !existsSync(file));
+    
+    if (missing.length > 0) {
+      throw new Error(`Missing files: ${missing.join(', ')}`);
     }
+
+    console.log('✅ Deployment build completed successfully!');
+    console.log('📁 Frontend assets: dist/public/');
+    console.log('🚀 Backend server: dist/index.js');
+    console.log('📦 Deployment ready - cartographer dependency bypassed');
+    
+    return true;
 
   } catch (error) {
-    console.error('Deployment build failed:', error.message);
-    
-    if (existsSync('vite.deploy.config.js')) {
-      rmSync('vite.deploy.config.js');
-    }
-    
+    console.error('❌ Deployment build failed:', error.message);
     return false;
   }
 }

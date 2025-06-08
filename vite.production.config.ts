@@ -17,17 +17,9 @@ export default defineConfig({
     emptyOutDir: true,
     minify: true,
     sourcemap: false,
-    rollupOptions: {
-      external: [],
-      output: {
-        manualChunks: undefined,
-      },
-    },
-  },
-  define: {
-    'process.env.NODE_ENV': '"production"'
   },
   mode: 'production',
-  clearScreen: false,
-  logLevel: 'warn',
+  server: {
+    port: 3001
+  }
 });
