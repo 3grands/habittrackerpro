@@ -1,0 +1,58 @@
+1. Modify Your Server Startup Code
+Find the file where you call app.listen() (for example, in a file like server/start.ts). Instead of unconditionally starting the server, wrap the listen call in an environment check.
+
+For example, update your server startup code (either in server/start.ts or in the file that originally contained the listen call) as follows:
+
+ts
+Copy
+Edit
+import app from "./index"; // assuming app is exported from index.ts
+
+// Only start the server if we are not in "build mode"
+if (process.env.SKIP_SERVER_START !== "true") {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+} else {
+  console.log("SKIP_SERVER_START is true: not starting the server.");
+}
+This means that when an environment variable SKIP_SERVER_START is set to "true", the code that calls app.listen() will be bypassed. This prevents any server startup code from running during the build process.
+
+2. Update Your Build Script in package.json
+Tell your build process to set this environment variable so that the server won’t start during the build.
+
+For example, in your package.json adjust the build script to look like this:
+
+json
+Copy
+Edit
+"scripts": {
+  "dev": "vite",
+  "build": "SKIP_SERVER_START=true vite build && esbuild server/start.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/server.js",
+  "preview": "vite preview --port=$PORT",
+  "start": "node dist/server.js"
+}
+When you run npm run build, the SKIP_SERVER_START variable will be set to "true", so even if your server files are imported, they won’t attempt to listen on port 5000 during the build.
+
+3. Rebuild and Redeploy
+Now perform these commands in your Replit Shell to clean and rebuild:
+
+bash
+Copy
+Edit
+rm -rf dist node_modules
+npm install
+npm run build
+Then click Redeploy in Replit.
+
+4. Verify at Runtime
+When your app is actually started in production (or when you run the startup command manually), make sure that the SKIP_SERVER_START environment variable is not set. That way, your server will properly start:
+
+Locally, you can run:
+
+bash
+Copy
+Edit
+npm start
+On Replit, Cloud Run should execute the built file without the build-time variable interfering.
