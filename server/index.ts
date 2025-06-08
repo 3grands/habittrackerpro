@@ -60,10 +60,9 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
-  // Start server immediately on port 5000
-  const port = 5000;
-  server.listen(port, "0.0.0.0", async () => {
-    log(`serving on port ${port}`);
+  const PORT = process.env.PORT || 5000;
+  server.listen(PORT, "0.0.0.0", async () => {
+    console.log(`Server running on port ${PORT}`);
     
     // Setup Vite after server is listening to avoid startup delays
     if (app.get("env") === "development") {
