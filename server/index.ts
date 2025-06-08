@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { serveStatic, log } from "./vite";
 
 const app = express();
 
@@ -10,15 +10,14 @@ app.use(express.urlencoded({ extended: false }));
 
 // CORS headers
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") return res.sendStatus(200);
   next();
 });
 
+// Request logger
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -34,14 +33,8 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
+      if (capturedJsonResponse) logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      if (logLine.length > 80) logLine = logLine.slice(0, 79) + "…";
       log(logLine);
     }
   });
@@ -49,9 +42,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Setup routes and error handling but don't start server
+// Conditionally import and use Vite dev middleware only in development
+if (process.env.NODE_ENV !== "production") {
+  (async () => {
+    try {
+      const mod = await import("./vite.js"); // do not import at top level
+      if (typeof mod.setupVite === "function") {
+        await mod.setupVite(app);
+      }
+    } catch (err) {
+      console.error("Skipping Vite setup in production:", err);
+    }
+  })();
+}
+
+// Setup routes and error handling
 (async () => {
-  const server = await registerRoutes(app);
+  await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -61,3 +68,4 @@ app.use((req, res, next) => {
 })();
 
 export default app;
+

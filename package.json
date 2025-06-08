@@ -5,9 +5,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite --port 5000 --host 0.0.0.0",
-    "build": "vite build && cross-env SKIP_SERVER_START=true esbuild server/start.ts --platform=node --bundle --format=esm --outfile=dist/server.js",
+    "build": "vite build",
     "preview": "vite preview --port=$PORT",
-    "start": "NODE_ENV=production node dist/index.js",
+    "start": "tsx server/start.ts",
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },
