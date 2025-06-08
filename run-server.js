@@ -69,7 +69,16 @@ app.patch('/api/habits/:id', (req, res) => {
   const habitIndex = habits.findIndex(h => h.id === id);
   if (habitIndex === -1) return res.status(404).json({ error: 'Habit not found' });
   
-  habits[habitIndex] = { ...habits[habitIndex], ...req.body };
+  // Sanitize input to prevent prototype pollution
+  const allowedFields = ['name', 'category', 'frequency', 'goal', 'unit', 'streak', 'isActive'];
+  const sanitizedUpdate = {};
+  for (const field of allowedFields) {
+    if (req.body.hasOwnProperty(field)) {
+      sanitizedUpdate[field] = req.body[field];
+    }
+  }
+  
+  habits[habitIndex] = { ...habits[habitIndex], ...sanitizedUpdate };
   res.json(habits[habitIndex]);
 });
 
