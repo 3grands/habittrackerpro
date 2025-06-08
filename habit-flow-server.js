@@ -193,7 +193,17 @@ app.patch('/api/habits/:id', (req, res) => {
       return res.status(404).json({ error: 'Habit not found' });
     }
     
-    const updatedHabit = { ...habits[habitIndex], ...req.body };
+    // Only allow specific safe properties to be updated
+    const allowedFields = ['name', 'category', 'frequency', 'goal', 'unit', 'reminderTime', 'streak'];
+    const updates = {};
+    
+    for (const field of allowedFields) {
+      if (req.body.hasOwnProperty(field)) {
+        updates[field] = req.body[field];
+      }
+    }
+    
+    const updatedHabit = { ...habits[habitIndex], ...updates };
     habits[habitIndex] = updatedHabit;
     
     console.log(`Updated habit: ${updatedHabit.name}`);
