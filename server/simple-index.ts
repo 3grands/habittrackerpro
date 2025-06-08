@@ -31,33 +31,36 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  log("Starting HabitFlow server...");
-  
-  const server = await registerRoutes(app);
+// Only start server if not in build mode
+if (process.env.SKIP_SERVER_START !== "true" && process.env.NODE_ENV !== "production") {
+  (async () => {
+    log("Starting HabitFlow server...");
+    
+    const server = await registerRoutes(app);
 
-  // Error handler
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    console.error("Server error:", err);
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-  });
+    // Error handler
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      console.error("Server error:", err);
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+    });
 
-  // Setup Vite in development
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+    // Setup Vite in development
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
 
-  // Start server on port 5000
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`HabitFlow server running on port ${port}`);
-  });
-})();
+    // Start server on port 5000
+    const port = 5000;
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`HabitFlow server running on port ${port}`);
+    });
+  })();
+}

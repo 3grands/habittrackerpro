@@ -1,61 +1,81 @@
 #!/usr/bin/env node
 
-import { spawn } from 'child_process';
-import { existsSync, rmSync, mkdirSync } from 'fs';
+import { execSync } from 'child_process';
+import { existsSync, rmSync, mkdirSync, writeFileSync } from 'fs';
+import path from 'path';
 
-console.log('🏗️  Creating deployment build...');
+async function buildForDeployment() {
+  console.log('🚀 Starting deployment build...');
 
-async function runCommand(command, args, env = {}) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(command, args, {
+  try {
+    // Clean build directory
+    if (existsSync('dist')) {
+      rmSync('dist', { recursive: true, force: true });
+    }
+    mkdirSync('dist', { recursive: true });
+    mkdirSync('dist/public', { recursive: true });
+
+    // Build frontend only (without server interference)
+    console.log('🎨 Building frontend...');
+    process.env.NODE_ENV = 'production';
+    
+    execSync('npx vite build', { 
       stdio: 'inherit',
-      env: { ...process.env, ...env }
-    });
-
-    proc.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Command failed with exit code ${code}`));
+      env: { 
+        ...process.env, 
+        NODE_ENV: 'production',
+        SKIP_SERVER_START: 'true'
       }
     });
 
-    proc.on('error', reject);
-  });
-}
+    // Build backend with explicit server skip
+    console.log('⚙️ Building backend...');
+    execSync('npx esbuild server/start.ts --platform=node --bundle --format=esm --outfile=dist/server.js --packages=external --target=node18', { 
+      stdio: 'inherit',
+      env: { 
+        ...process.env,
+        SKIP_SERVER_START: 'true'
+      }
+    });
 
-try {
-  // Clean previous build
-  if (existsSync('dist')) {
-    console.log('🧹 Cleaning previous build...');
-    rmSync('dist', { recursive: true, force: true });
+    // Create production package.json
+    const productionPackage = {
+      "name": "habitflow-production",
+      "version": "1.0.0",
+      "type": "module",
+      "main": "server.js",
+      "scripts": {
+        "start": "node server.js"
+      },
+      "engines": {
+        "node": ">=18.0.0"
+      }
+    };
+
+    writeFileSync(
+      path.join('dist', 'package.json'),
+      JSON.stringify(productionPackage, null, 2)
+    );
+
+    // Copy shared schema if it exists
+    try {
+      if (existsSync('shared')) {
+        mkdirSync('dist/shared', { recursive: true });
+        execSync('cp -r shared/* dist/shared/', { stdio: 'inherit' });
+      }
+    } catch (err) {
+      console.log('Note: No shared directory to copy');
+    }
+
+    console.log('✅ Build completed successfully!');
+    console.log('📁 Output directory: dist/');
+    console.log('🌐 Frontend assets: dist/public/');
+    console.log('⚡ Server file: dist/server.js');
+    
+  } catch (error) {
+    console.error('❌ Build failed:', error.message);
+    process.exit(1);
   }
-  mkdirSync('dist', { recursive: true });
-
-  // Build frontend without server integration
-  console.log('📦 Building frontend (isolated)...');
-  await runCommand('npx', ['vite', 'build', '--config', 'vite.build.config.ts'], {
-    NODE_ENV: 'production'
-  });
-
-  // Build backend separately
-  console.log('🔧 Building backend...');
-  await runCommand('npx', [
-    'esbuild', 
-    'server/index.ts',
-    '--platform=node',
-    '--packages=external', 
-    '--bundle',
-    '--format=esm',
-    '--outdir=dist'
-  ], {
-    NODE_ENV: 'build'
-  });
-
-  console.log('✅ Deployment build completed!');
-  console.log('📁 Build output in /dist directory');
-
-} catch (error) {
-  console.error('❌ Build failed:', error.message);
-  process.exit(1);
 }
+
+buildForDeployment();
