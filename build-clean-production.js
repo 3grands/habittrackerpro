@@ -1,90 +1,135 @@
 #!/usr/bin/env node
 
 import { execSync } from 'child_process';
-import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, rmSync, mkdirSync, writeFileSync } from 'fs';
 
 async function buildProduction() {
-  console.log('Creating production build...');
+  console.log('Creating clean production build without cartographer...');
 
   try {
     // Clean build directory
     if (existsSync('dist')) {
       rmSync('dist', { recursive: true, force: true });
     }
-    mkdirSync('dist', { recursive: true });
+    mkdirSync('dist/public', { recursive: true });
 
-    // Create clean vite config without server imports
-    const cleanViteConfig = `
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
-
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"),
-      "@assets": path.resolve(import.meta.dirname, "attached_assets"),
-    },
-  },
-  root: path.resolve(import.meta.dirname, "client"),
-  build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
-    emptyOutDir: true,
-    minify: true,
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
-    },
-  },
-  mode: 'production',
-});
-`;
-
-    writeFileSync('vite.clean.config.js', cleanViteConfig);
-
-    // Build frontend without any server imports
-    console.log('Building frontend...');
-    execSync('NODE_ENV=production npx vite build --config vite.clean.config.js', { 
-      stdio: 'inherit',
-      env: { ...process.env, NODE_ENV: 'production' }
-    });
-
-    // Build backend separately
-    console.log('Building backend...');
-    execSync('NODE_ENV=build npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist', { 
+    // Build CSS
+    console.log('Building styles...');
+    execSync('npx tailwindcss -i ./client/src/index.css -o ./dist/public/main.css --minify', { 
       stdio: 'inherit'
     });
 
-    // Clean up temporary config
-    if (existsSync('vite.clean.config.js')) {
-      rmSync('vite.clean.config.js');
+    // Build frontend using esbuild
+    console.log('Building frontend...');
+    const esbuildConfig = `
+import { build } from 'esbuild';
+import { resolve } from 'path';
+
+await build({
+  entryPoints: ['client/src/main.tsx'],
+  bundle: true,
+  outfile: 'dist/public/main.js',
+  format: 'esm',
+  jsx: 'automatic',
+  define: {
+    'process.env.NODE_ENV': '"production"'
+  },
+  loader: {
+    '.tsx': 'tsx',
+    '.ts': 'ts',
+    '.jsx': 'jsx',
+    '.js': 'js',
+    '.css': 'css',
+    '.png': 'file',
+    '.jpg': 'file',
+    '.jpeg': 'file',
+    '.svg': 'file'
+  },
+  target: 'es2020',
+  minify: true,
+  alias: {
+    '@': resolve('./client/src'),
+    '@shared': resolve('./shared'),
+    '@assets': resolve('./attached_assets')
+  }
+});
+`;
+
+    writeFileSync('esbuild.config.mjs', esbuildConfig);
+    execSync('node esbuild.config.mjs', { stdio: 'inherit' });
+
+    // Build backend using clean production entry point
+    console.log('Building backend...');
+    execSync('npx esbuild server/start-production.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/server.js --target=node18', { 
+      stdio: 'inherit'
+    });
+
+    // Create HTML file
+    const indexHtml = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HabitFlow - Build Better Habits</title>
+    <meta name="description" content="Transform your daily routines with HabitFlow's intelligent habit tracking and AI-powered coaching." />
+    <link rel="stylesheet" href="/main.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>`;
+
+    writeFileSync('dist/public/index.html', indexHtml);
+
+    // Create deployment package.json
+    const deployPackage = {
+      "name": "habitflow-deploy",
+      "version": "1.0.0",
+      "type": "module",
+      "main": "server.js",
+      "scripts": {
+        "start": "node server.js"
+      },
+      "engines": {
+        "node": ">=18.0.0"
+      }
+    };
+
+    writeFileSync('dist/package.json', JSON.stringify(deployPackage, null, 2));
+
+    // Clean up temp files
+    if (existsSync('esbuild.config.mjs')) {
+      rmSync('esbuild.config.mjs');
+    }
+
+    // Verify build
+    const requiredFiles = [
+      'dist/public/index.html',
+      'dist/public/main.js', 
+      'dist/public/main.css',
+      'dist/server.js',
+      'dist/package.json'
+    ];
+
+    const missing = requiredFiles.filter(file => !existsSync(file));
+    
+    if (missing.length > 0) {
+      throw new Error(`Missing files: ${missing.join(', ')}`);
     }
 
     console.log('Production build completed successfully!');
-    console.log('Frontend: dist/public/');
-    console.log('Backend: dist/index.js');
+    console.log('Frontend assets: dist/public/');
+    console.log('Backend server: dist/server.js');
+    console.log('Deployment ready - cartographer completely removed');
     
-    // Test if build artifacts exist
-    if (existsSync('dist/public/index.html') && existsSync('dist/index.js')) {
-      console.log('Build verification: All artifacts created successfully');
-    } else {
-      throw new Error('Build verification failed: Missing build artifacts');
-    }
+    return true;
 
   } catch (error) {
     console.error('Production build failed:', error.message);
-    
-    // Clean up on error
-    if (existsSync('vite.clean.config.js')) {
-      rmSync('vite.clean.config.js');
-    }
-    
-    process.exit(1);
+    return false;
   }
 }
 
-buildProduction();
+const success = await buildProduction();
+process.exit(success ? 0 : 1);
