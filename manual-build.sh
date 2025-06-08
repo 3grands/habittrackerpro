@@ -16,7 +16,7 @@ echo "Frontend build complete."
 
 # Build backend
 echo "Building backend..."
-npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --out-extension:.js=.mjs
 
 echo "Backend build complete."
 echo "Production build finished successfully!"
