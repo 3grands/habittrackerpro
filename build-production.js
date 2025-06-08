@@ -1,43 +1,32 @@
-import { build } from 'vite';
+#!/usr/bin/env node
+
 import { execSync } from 'child_process';
-import path from 'path';
+import { existsSync, rmSync } from 'fs';
 
-async function buildProduction() {
-  try {
-    console.log('Building frontend...');
-    
-    // Build frontend with Vite
-    await build({
-      root: path.resolve(process.cwd(), 'client'),
-      build: {
-        outDir: path.resolve(process.cwd(), 'dist/public'),
-        emptyOutDir: true,
-      },
-      resolve: {
-        alias: {
-          "@": path.resolve(process.cwd(), "client", "src"),
-          "@shared": path.resolve(process.cwd(), "shared"),
-          "@assets": path.resolve(process.cwd(), "attached_assets"),
-        },
-      },
-    });
-    
-    console.log('Frontend build complete.');
-    
-    console.log('Building backend...');
-    
-    // Build backend with esbuild
-    execSync('esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist', {
-      stdio: 'inherit'
-    });
-    
-    console.log('Backend build complete.');
-    console.log('Production build finished successfully!');
-    
-  } catch (error) {
-    console.error('Build failed:', error);
-    process.exit(1);
+console.log('🏗️  Building HabitFlow for production...');
+
+try {
+  // Clean previous build
+  if (existsSync('dist')) {
+    console.log('🧹 Cleaning previous build...');
+    rmSync('dist', { recursive: true, force: true });
   }
-}
 
-buildProduction();
+  // Build frontend
+  console.log('📦 Building frontend...');
+  execSync('vite build', { stdio: 'inherit' });
+
+  // Build backend with proper environment
+  console.log('🔧 Building backend...');
+  execSync('NODE_ENV=build esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist', { 
+    stdio: 'inherit',
+    env: { ...process.env, NODE_ENV: 'build' }
+  });
+
+  console.log('✅ Build completed successfully!');
+  console.log('🚀 Run "npm start" to start the production server');
+
+} catch (error) {
+  console.error('❌ Build failed:', error.message);
+  process.exit(1);
+}
