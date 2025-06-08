@@ -62,11 +62,7 @@ app.use((req, res, next) => {
 
   // Start server immediately on port 5000
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, async () => {
+  server.listen(port, "0.0.0.0", async () => {
     log(`serving on port ${port}`);
     
     // Setup Vite after server is listening to avoid startup delays
