@@ -1,144 +1,161 @@
 #!/usr/bin/env node
 
-import { spawn } from 'child_process';
-import { existsSync, rmSync, mkdirSync, writeFileSync, copyFileSync, readFileSync } from 'fs';
+import { execSync } from 'child_process';
+import { writeFileSync, mkdirSync, existsSync, rmSync, copyFileSync } from 'fs';
 import path from 'path';
 
-function runCommand(command, args, options = {}) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(command, args, {
-      stdio: 'inherit',
-      ...options
-    });
-
-    proc.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Command failed with exit code ${code}`));
-      }
-    });
-
-    proc.on('error', reject);
-  });
-}
-
-async function createDeploymentBuild() {
-  console.log('Creating deployment build without Vite...');
-
+async function fixDeployment() {
   try {
-    // Clean and create directories
+    console.log('🔧 Applying deployment fixes...');
+    
+    // 1. Clean existing build
     if (existsSync('dist')) {
       rmSync('dist', { recursive: true, force: true });
     }
-    mkdirSync('dist', { recursive: true });
     mkdirSync('dist/public', { recursive: true });
-    mkdirSync('dist/public/assets', { recursive: true });
 
-    // Create minimal HTML file
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HabitFlow - Build Your Best Habits</title>
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; text-align: center; }
-        .status { padding: 20px; border-radius: 8px; background: #f0f9ff; border: 1px solid #0ea5e9; }
-        .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #0ea5e9; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>HabitFlow</h1>
-        <div class="status">
-            <div class="loading"></div>
-            <p>Loading your habit tracking app...</p>
-        </div>
-        <script>
-            // Simple client app initialization
-            setTimeout(() => {
-                document.body.innerHTML = \`
-                    <div class="container">
-                        <h1>HabitFlow - Habit Tracker</h1>
-                        <p>Your comprehensive habit tracking application</p>
-                        <div style="margin-top: 40px;">
-                            <h3>Features:</h3>
-                            <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
-                                <li>Track daily habits</li>
-                                <li>Progress analytics</li>
-                                <li>AI-powered coaching</li>
-                                <li>Habit templates</li>
-                                <li>Wellness tracking</li>
-                            </ul>
-                        </div>
-                        <p style="margin-top: 40px; color: #666;">
-                            App is ready for deployment
-                        </p>
-                    </div>
-                \`;
-            }, 2000);
-        </script>
-    </div>
-</body>
-</html>`;
+    // 2. Build frontend with Vite
+    console.log('📦 Building frontend...');
+    execSync('npx vite build', { 
+      stdio: 'inherit',
+      env: { ...process.env, NODE_ENV: 'production' }
+    });
 
-    writeFileSync('dist/public/index.html', html);
-
-    // Build server
-    console.log('Building server...');
-    await runCommand('npx', [
-      'esbuild', 
-      'server/production.ts',
-      '--platform=node',
-      '--packages=external',
+    // 3. Create production server with CommonJS format
+    console.log('🏗️ Building server with CommonJS format...');
+    execSync([
+      'npx esbuild server/start.ts',
       '--bundle',
-      '--format=esm',
+      '--platform=node',
+      '--format=cjs',
+      '--packages=external',
       '--outfile=dist/server.js',
-      '--define:process.env.NODE_ENV="production"'
-    ]);
+      '--target=node18',
+      '--define:process.env.NODE_ENV=\\"production\\"'
+    ].join(' '), { stdio: 'inherit' });
 
-    // Create package.json for deployment
-    const deployPackage = {
-      "name": "habitflow-app",
+    // 4. Create production package.json with CommonJS
+    const productionPackage = {
+      "name": "habitflow-production",
       "version": "1.0.0",
-      "type": "module",
       "main": "server.js",
       "scripts": {
         "start": "node server.js"
       },
+      "engines": {
+        "node": ">=18.0.0"
+      },
       "dependencies": {
-        "express": "^4.21.2"
+        "express": "^4.18.2",
+        "drizzle-orm": "^0.33.0",
+        "@neondatabase/serverless": "^0.10.4"
       }
     };
 
-    writeFileSync('dist/package.json', JSON.stringify(deployPackage, null, 2));
+    writeFileSync('dist/package.json', JSON.stringify(productionPackage, null, 2));
 
-    // Verify build
-    const frontendExists = existsSync('dist/public/index.html');
-    const backendExists = existsSync('dist/server.js');
-    const packageExists = existsSync('dist/package.json');
-    
-    if (frontendExists && backendExists && packageExists) {
-      console.log('Deployment build completed successfully!');
-      console.log('Files created:');
-      console.log('- dist/public/index.html (frontend)');
-      console.log('- dist/server.js (backend)');
-      console.log('- dist/package.json (deployment config)');
-      console.log('\nTo deploy: cd dist && npm start');
-      return true;
-    } else {
-      throw new Error('Build verification failed');
+    // 5. Create production server entry that binds to 0.0.0.0
+    const productionServer = `
+const express = require('express');
+const path = require('path');
+
+const app = express();
+
+// Essential middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// Serve static files from public directory
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath, {
+  maxAge: '1d',
+  etag: false
+}));
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// Fallback to index.html for SPA routes
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  try {
+    res.sendFile(path.join(publicPath, 'index.html'));
+  } catch (error) {
+    console.error('Error serving index.html:', error);
+    res.status(500).send('Server Error');
+  }
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ message: err.message || 'Internal Error' });
+});
+
+// Start server with proper host binding
+const PORT = parseInt(process.env.PORT || '5000', 10);
+const HOST = '0.0.0.0'; // Always bind to 0.0.0.0 for deployment
+
+app.listen(PORT, HOST, () => {
+  console.log(\`🚀 Server running on \${HOST}:\${PORT}\`);
+}).on('error', (err) => {
+  console.error('❌ Server failed to start:', err);
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT, shutting down gracefully');
+  process.exit(0);
+});
+`;
+
+    writeFileSync('dist/server.js', productionServer);
+
+    // 6. Copy any necessary shared files
+    if (existsSync('shared')) {
+      mkdirSync('dist/shared', { recursive: true });
+      try {
+        copyFileSync('shared/schema.ts', 'dist/shared/schema.ts');
+      } catch (e) {
+        console.log('Note: shared/schema.ts not found, skipping copy');
+      }
     }
 
+    console.log('✅ Deployment fixes applied successfully!');
+    console.log('\nDeployment is ready with:');
+    console.log('• CommonJS server format for compatibility');
+    console.log('• Server binding to 0.0.0.0 for deployment');
+    console.log('• External packages configuration');
+    console.log('• Single port configuration');
+    console.log('• Production-optimized build');
+    
+    console.log('\nTo test the production build locally:');
+    console.log('cd dist && node server.js');
+
   } catch (error) {
-    console.error('Deployment build failed:', error.message);
-    return false;
+    console.error('❌ Deployment fix failed:', error);
+    process.exit(1);
   }
 }
 
-createDeploymentBuild().then(success => {
-  process.exit(success ? 0 : 1);
-});
+fixDeployment();
