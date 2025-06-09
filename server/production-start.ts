@@ -2,12 +2,9 @@
 
 import express, { Request, Response, NextFunction } from "express";
 import path from "path";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
-// For CommonJS compatibility
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// CommonJS __dirname equivalent
+const __dirname = process.cwd();
 
 const app = express();
 
