@@ -4,14 +4,39 @@ import { registerRoutes } from "./routes";
 
 const app = express();
 
-// JSON, URL-encoded, CORS, logging … your middleware here …
+// Essential middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
 
 // In production, serve the Vite build output:
 if (process.env.NODE_ENV === "production") {
-  const distPath = path.join(process.cwd(), "dist");
-  app.use(express.static(distPath));
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+  const publicPath = path.join(process.cwd(), "public");
+  app.use(express.static(publicPath, {
+    maxAge: '1d',
+    etag: false
+  }));
+  
+  // Fallback to index.html for SPA routes
+  app.get("*", (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    
+    try {
+      res.sendFile(path.join(publicPath, "index.html"));
+    } catch (error) {
+      console.error("Error serving index.html:", error);
+      res.status(500).send("Server Error");
+    }
   });
 }
 
