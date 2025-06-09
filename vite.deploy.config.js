@@ -7,20 +7,23 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"), 
-      "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+      "@": path.resolve("client/src"),
+      "@shared": path.resolve("shared"),
+      "@assets": path.resolve("attached_assets"),
     },
   },
-  root: path.resolve(import.meta.dirname, "client"),
+  root: "client",
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
-    emptyOutDir: true,
+    outDir: "../dist/public",
+    emptyOutDir: false,
     minify: true,
-    sourcemap: false,
-  },
-  mode: 'production',
-  server: {
-    port: 3001
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-button']
+        }
+      }
+    }
   }
 });
