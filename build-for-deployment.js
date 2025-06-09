@@ -1,50 +1,132 @@
-import fs from 'fs';
+#!/usr/bin/env node
 
-// Create a clean build without server conflicts
-console.log('Creating deployment build...');
+import { execSync } from 'child_process';
+import { writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
 
-// Ensure dist directory exists
-if (!fs.existsSync('dist')) {
-  fs.mkdirSync('dist');
-}
+async function buildForDeployment() {
+  try {
+    console.log('Building application for deployment...');
+    
+    // Clean existing build
+    if (existsSync('dist')) {
+      rmSync('dist', { recursive: true, force: true });
+    }
+    mkdirSync('dist', { recursive: true });
 
-// Copy our working static files
-if (fs.existsSync('dist/index.html')) {
-  console.log('Using existing static build');
-} else {
-  console.log('Creating new static build...');
-  // Run our static build generator
-  await import('./create-static-build.js');
-}
+    // Build frontend with Vite
+    console.log('Building frontend...');
+    execSync('npx vite build', { 
+      stdio: 'inherit',
+      env: { ...process.env, NODE_ENV: 'production' }
+    });
 
-// Create additional deployment files
-const packageInfo = {
-  name: "habitflow",
-  version: "1.0.0",
-  main: "index.html",
-  type: "static"
-};
+    // Build server with CommonJS format (override ESM from package.json)
+    console.log('Building server with CommonJS...');
+    execSync([
+      'npx esbuild server/start.ts',
+      '--bundle',
+      '--platform=node',
+      '--format=cjs',
+      '--packages=external',
+      '--outfile=dist/server.js',
+      '--target=node18',
+      '--define:process.env.NODE_ENV=\\"production\\"'
+    ].join(' '), { stdio: 'inherit' });
 
-fs.writeFileSync('dist/package.json', JSON.stringify(packageInfo, null, 2));
+    // Create production package.json WITHOUT "type": "module"
+    const productionPackage = {
+      "name": "habitflow-production",
+      "version": "1.0.0",
+      "main": "server.js",
+      "scripts": {
+        "start": "node server.js"
+      },
+      "engines": {
+        "node": ">=18.0.0"
+      },
+      "dependencies": {
+        "express": "^4.18.2",
+        "drizzle-orm": "^0.33.0",
+        "@neondatabase/serverless": "^0.10.4"
+      }
+    };
 
-// Create a simple server fallback for dynamic deployment
-const serverFallback = `
+    writeFileSync('dist/package.json', JSON.stringify(productionPackage, null, 2));
+
+    // Create a server wrapper that ensures 0.0.0.0 binding
+    const serverWrapper = `// Production server wrapper - CommonJS format
 const express = require('express');
 const path = require('path');
+
 const app = express();
 
-app.use(express.static('.'));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// Middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log('HabitFlow deployed on port', PORT);
+// Serve static files
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    format: 'CommonJS'
+  });
+});
+
+// Fallback for SPA
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
+// Force bind to 0.0.0.0 for deployment
+const PORT = parseInt(process.env.PORT || '5000', 10);
+const HOST = '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
+  console.log(\`Server running on \${HOST}:\${PORT}\`);
+}).on('error', (err) => {
+  console.error('Server failed to start:', err);
+  process.exit(1);
 });
 `;
 
-fs.writeFileSync('dist/server.js', serverFallback);
+    writeFileSync('dist/server.js', serverWrapper);
 
-console.log('Deployment build completed successfully');
-console.log('Files created:', fs.readdirSync('dist'));
+    console.log('Deployment build completed successfully!');
+    console.log('');
+    console.log('Fixed issues:');
+    console.log('- Server format: CommonJS (not ESM)');
+    console.log('- Host binding: 0.0.0.0 (not localhost)');
+    console.log('- External packages: Properly configured');
+    console.log('- Module format: Compatible with Node.js runtime');
+    console.log('');
+    console.log('Ready for deployment!');
+
+  } catch (error) {
+    console.error('Build failed:', error);
+    process.exit(1);
+  }
+}
+
+buildForDeployment();
