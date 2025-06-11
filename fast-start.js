@@ -81,7 +81,19 @@ app.patch('/api/habits/:id', (req, res) => {
     const habitIndex = habits.findIndex(h => h.id === id);
     if (habitIndex === -1) return res.status(404).json({ error: 'Habit not found' });
     
-    habits[habitIndex] = { ...habits[habitIndex], ...req.body };
+    // Only allow specific safe properties to be updated
+    const { name, category, frequency, goal, unit, streak, todayProgress, isCompletedToday } = req.body;
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (category !== undefined) updates.category = category;
+    if (frequency !== undefined) updates.frequency = frequency;
+    if (goal !== undefined) updates.goal = goal;
+    if (unit !== undefined) updates.unit = unit;
+    if (streak !== undefined) updates.streak = streak;
+    if (todayProgress !== undefined) updates.todayProgress = todayProgress;
+    if (isCompletedToday !== undefined) updates.isCompletedToday = isCompletedToday;
+    
+    habits[habitIndex] = { ...habits[habitIndex], ...updates };
     res.json(habits[habitIndex]);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update habit' });
