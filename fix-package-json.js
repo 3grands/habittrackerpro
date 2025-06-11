@@ -1,100 +1,87 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from 'fs';
 
-try {
-  const packageJsonPath = 'package.json';
-  let content = readFileSync(packageJsonPath, 'utf8');
-  
-  console.log('Fixing package.json structure...');
-  
-  // Fix the scripts section by replacing the malformed part
-  content = content.replace(
-    `  "scripts": {
-    "dev": "vite",
-    "build": "vite build && cross-env SKIP_SERVER_START=true esbuild server/start.ts --platform=node --bundle --format=esm --outfile=dist/server.js",
-    "preview": "vite preview --port=$PORT"
-  }
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-    "start": "NODE_ENV=production node dist/index.js",
-    "check": "tsc",
-    "db:push": "drizzle-kit push"
-  },`,
-    `  "scripts": {
-    "dev": "vite",
-    "build": "vite build && cross-env SKIP_SERVER_START=true esbuild server/start.ts --platform=node --bundle --format=esm --outfile=dist/server.js",
-    "preview": "vite preview --port=$PORT",
-    "start": "NODE_ENV=production node dist/index.js",
-    "check": "tsc",
-    "db:push": "drizzle-kit push"
-  },`
-  );
-  
-  // Validate the JSON structure
-  const parsed = JSON.parse(content);
-  console.log('JSON validation successful');
-  
-  // Write the fixed content
-  writeFileSync(packageJsonPath, content, 'utf8');
-  console.log('Fixed package.json successfully');
-  
-} catch (error) {
-  console.error('Error:', error.message);
-  
-  // If JSON parsing fails, let's try a more surgical approach
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+async function fixPackageJson() {
   try {
-    let content = readFileSync('package.json', 'utf8');
+    console.log('Fixing package.json...');
     
-    // Remove the problematic lines and rebuild
-    const lines = content.split('\n');
-    const fixedLines = [];
-    let inScripts = false;
-    let scriptsBrace = 0;
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      if (line.includes('"scripts":')) {
-        inScripts = true;
-        fixedLines.push(line);
-        continue;
+    // Create a proper package.json structure
+    const packageJson = {
+      "name": "habitflow",
+      "version": "1.0.0",
+      "type": "module",
+      "scripts": {
+        "dev": "tsx server/dev-server.ts",
+        "build": "vite build && tsx server/build.ts",
+        "start": "node dist/server.js",
+        "preview": "vite preview --port=$PORT",
+        "check": "tsc",
+        "db:push": "drizzle-kit push"
+      },
+      "dependencies": {
+        "@hookform/resolvers": "^3.3.2",
+        "@radix-ui/react-dialog": "^1.0.5",
+        "@radix-ui/react-dropdown-menu": "^2.0.6",
+        "@radix-ui/react-form": "^0.0.3",
+        "@radix-ui/react-icons": "^1.3.0",
+        "@radix-ui/react-label": "^2.0.2",
+        "@radix-ui/react-popover": "^1.0.7",
+        "@radix-ui/react-select": "^2.0.0",
+        "@radix-ui/react-separator": "^1.0.3",
+        "@radix-ui/react-slot": "^1.0.2",
+        "@radix-ui/react-toast": "^1.1.5",
+        "@tanstack/react-query": "^5.8.4",
+        "class-variance-authority": "^0.7.0",
+        "clsx": "^2.0.0",
+        "cors": "^2.8.5",
+        "drizzle-orm": "^0.29.0",
+        "drizzle-zod": "^0.5.1",
+        "express": "^4.18.2",
+        "lucide-react": "^0.294.0",
+        "pg": "^8.11.3",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-hook-form": "^7.47.0",
+        "react-icons": "^4.12.0",
+        "tailwind-merge": "^2.0.0",
+        "tailwindcss-animate": "^1.0.7",
+        "wouter": "^3.0.0",
+        "zod": "^3.22.4"
+      },
+      "devDependencies": {
+        "@types/cors": "^2.8.15",
+        "@types/express": "^4.17.21",
+        "@types/node": "^20.8.10",
+        "@types/pg": "^8.10.7",
+        "@types/react": "^18.2.15",
+        "@types/react-dom": "^18.2.7",
+        "@vitejs/plugin-react": "^4.0.3",
+        "autoprefixer": "^10.4.16",
+        "drizzle-kit": "^0.20.4",
+        "postcss": "^8.4.31",
+        "tailwindcss": "^3.3.5",
+        "tsx": "^4.1.2",
+        "typescript": "^5.2.2",
+        "vite": "^4.4.5"
       }
-      
-      if (inScripts) {
-        if (line.includes('{')) scriptsBrace++;
-        if (line.includes('}')) scriptsBrace--;
-        
-        if (scriptsBrace === 0 && line.includes('}')) {
-          // This is the end of scripts section
-          fixedLines.push('    "start": "NODE_ENV=production node dist/index.js",');
-          fixedLines.push('    "check": "tsc",');
-          fixedLines.push('    "db:push": "drizzle-kit push"');
-          fixedLines.push('  },');
-          inScripts = false;
-          continue;
-        }
-        
-        if (line.includes('"preview":')) {
-          fixedLines.push('    "preview": "vite preview --port=$PORT",');
-          continue;
-        }
-        
-        fixedLines.push(line);
-      } else {
-        // Skip malformed entries outside scripts
-        if (line.includes('"start":') || line.includes('"check":') || line.includes('"db:push":')) {
-          continue;
-        }
-        fixedLines.push(line);
-      }
-    }
+    };
     
-    const fixedContent = fixedLines.join('\n');
-    JSON.parse(fixedContent); // Validate
-    writeFileSync('package.json', fixedContent, 'utf8');
-    console.log('Fixed package.json with surgical approach');
+    // Write the fixed package.json
+    const packageJsonPath = path.join(__dirname, 'package.json');
+    await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
     
-  } catch (secondError) {
-    console.error('Surgical fix also failed:', secondError.message);
+    console.log('package.json has been fixed!');
+    console.log('Running npm install to ensure dependencies are installed...');
+    
+  } catch (error) {
+    console.error('Failed to fix package.json:', error.message);
     process.exit(1);
   }
 }
+
+fixPackageJson();
