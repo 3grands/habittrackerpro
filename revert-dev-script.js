@@ -6,25 +6,23 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-async function fixDevScript() {
+async function revertDevScript() {
   try {
-    console.log('Updating dev script to use fixed server...');
-    
     const packageJsonPath = path.join(__dirname, 'package.json');
     const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
     const packageJson = JSON.parse(packageJsonContent);
     
-    // Update dev script to use the fixed server
-    packageJson.scripts.dev = "npx tsx server/dev-server-fixed.ts";
+    // Revert to original dev script
+    packageJson.scripts.dev = "npx tsx server/dev-server.ts";
     
     await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
     
-    console.log('Updated dev script successfully');
+    console.log('Reverted dev script to original');
     
   } catch (error) {
-    console.error('Failed to update dev script:', error.message);
+    console.error('Failed to revert dev script:', error.message);
     process.exit(1);
   }
 }
 
-fixDevScript();
+revertDevScript();
