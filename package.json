@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npx tsx server/dev-server.ts",
+    "dev": "npx tsx server/working-dev-server.ts",
     "build": "vite build && npx tsx server/build.ts",
     "start": "node dist/server.js",
     "preview": "vite preview --port=$PORT",
