@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npx tsx server/simple-dev-server.ts",
+    "dev": "npx tsx server/transpile-dev-server.ts",
     "build": "vite build && npx tsx server/build.ts",
     "start": "node dist/server.js",
     "preview": "vite preview --port=$PORT",
@@ -28,6 +28,7 @@
     "cors": "^2.8.5",
     "drizzle-orm": "^0.29.5",
     "drizzle-zod": "^0.5.1",
+    "esbuild": "^0.25.5",
     "express": "^4.21.2",
     "lucide-react": "^0.294.0",
     "openai": "^5.3.0",
