@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { log } from "./vite";
+import { createServer } from "vite";
+import path from "path";
 
 const app = express();
 
@@ -45,8 +47,22 @@ async function startServer() {
       res.status(status).json({ message });
     });
 
-    // Setup Vite in development mode
-    await setupVite(app, server);
+    // Create Vite development server
+    const vite = await createServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+      root: process.cwd(),
+      resolve: {
+        alias: {
+          "@": path.resolve(process.cwd(), "client/src"),
+          "@shared": path.resolve(process.cwd(), "shared"),
+          "@assets": path.resolve(process.cwd(), "attached_assets"),
+        },
+      },
+    });
+
+    // Use Vite's middleware
+    app.use(vite.middlewares);
 
     // Start server on port 5000
     const port = process.env.PORT || 5000;
