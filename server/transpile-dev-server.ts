@@ -42,12 +42,16 @@ app.use('/src', async (req, res, next) => {
       const esbuild = await import('esbuild');
       const result = await esbuild.build({
         entryPoints: [filePath],
-        bundle: false,
+        bundle: true,
         format: 'esm',
         target: 'es2020',
         write: false,
         jsx: 'automatic',
-        loader: { '.tsx': 'tsx', '.ts': 'ts' }
+        loader: { '.tsx': 'tsx', '.ts': 'ts' },
+        external: ['react', 'react-dom'],
+        define: {
+          'process.env.NODE_ENV': '"development"'
+        }
       });
       
       res.setHeader('Content-Type', 'application/javascript');
