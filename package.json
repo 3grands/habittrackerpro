@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD
-  "name": "rest-express",
-=======
   "name": "habit-tracker-pro",
->>>>>>> ec4d63714fb920967c2a0372d4d3463bfdc33dc1
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
@@ -11,15 +7,6 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-<<<<<<< HEAD
-    "check": "tsc",
-    "db:push": "drizzle-kit push"
-  },
-  "dependencies": {},
-  "devDependencies": {},
-  "optionalDependencies": {}
-}
-=======
     "start": "vite preview"
   },
   "dependencies": {
@@ -55,4 +42,3 @@
     "vite": "^6.0.0"
   }
 }
->>>>>>> ec4d63714fb920967c2a0372d4d3463bfdc33dc1
