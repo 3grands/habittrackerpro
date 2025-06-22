@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Home, ChartLine, Brain, Heart } from "lucide-react";
+import { ArrowLeft, Home, LineChart, Brain, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HabitStats } from "@/lib/types";

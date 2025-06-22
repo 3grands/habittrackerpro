@@ -1,4 +1,4 @@
-import { ArrowLeft, Home, ChartLine, Brain, Settings, Heart } from "lucide-react";
+import { ArrowLeft, Home, LineChart, Brain, Settings, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MoodTracker } from "@/components/mood-tracker";

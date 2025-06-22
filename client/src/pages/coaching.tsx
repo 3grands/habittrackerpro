@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, RefreshCw, Brain, Send, Home, ChartLine, Heart, Lightbulb, Clock, Target } from "lucide-react";
+import { ArrowLeft, RefreshCw, Brain, Send, Home, LineChart, Heart, Lightbulb, Clock, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CoachChat } from "@/components/coach-chat";

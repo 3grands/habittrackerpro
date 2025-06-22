@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Home, ChartLine, Brain, Heart } from "lucide-react";
+import { ArrowLeft, Home, LineChart, Brain, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HabitStats } from "@/lib/types";
@@ -190,7 +190,7 @@ export default function ProgressPage() {
             asChild
           >
             <Link href="/progress">
-              <ChartLine className="w-5 h-5 mb-1" />
+              <LineChart className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium">Progress</span>
             </Link>
           </Button>
