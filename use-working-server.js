@@ -12,12 +12,11 @@ async function useWorkingServer() {
     const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
     const packageJson = JSON.parse(packageJsonContent);
     
-    // Update dev script to use the working server
     packageJson.scripts.dev = "npx tsx server/working-dev-server.ts";
     
     await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
     
-    console.log('Updated to use working dev server');
+    console.log('Updated to use Vite-based working dev server');
     
   } catch (error) {
     console.error('Failed to update dev script:', error.message);

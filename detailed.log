@@ -1,0 +1,4 @@
+5:47:52 PM [express] Checking API key availability...
+5:47:52 PM [express] ⚠️  Some API keys not available: Validation failed for: Stripe (Account cannot accept payments - charges not enabled), OpenAI (API key length validation failed)
+5:47:52 PM [express] Core app will work, but some features may be limited.
+5:47:52 PM [express] serving on port 5000

@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { log } from "./vite";
 import path from "path";
 import fs from "fs";
 
@@ -27,7 +26,7 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (req.path.startsWith("/api")) {
-      log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
+      console.log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
     }
   });
   next();
@@ -35,7 +34,7 @@ app.use((req, res, next) => {
 
 async function startServer() {
   try {
-    log("Starting HabitFlow development server...");
+    console.log("Starting HabitFlow development server...");
     
     const server = await registerRoutes(app);
 
@@ -47,38 +46,38 @@ async function startServer() {
       res.status(status).json({ message });
     });
 
-    // Setup Vite middleware properly
-    const { createServer } = await import("vite");
+    // Setup Vite dev server for frontend
+    const { createServer } = await import('vite');
     const vite = await createServer({
       server: { middlewareMode: true },
       appType: 'spa',
-      root: path.resolve(process.cwd(), "client"),
+      root: path.resolve(process.cwd(), 'client'),
+      publicDir: path.resolve(process.cwd(), 'client/public'),
       resolve: {
         alias: {
-          "@": path.resolve(process.cwd(), "client", "src"),
-          "@shared": path.resolve(process.cwd(), "shared"),
-          "@assets": path.resolve(process.cwd(), "attached_assets"),
-        },
-      },
+          '@': path.resolve(process.cwd(), 'client/src'),
+          '@shared': path.resolve(process.cwd(), 'shared'),
+          '@assets': path.resolve(process.cwd(), 'attached_assets'),
+        }
+      }
     });
 
-    app.use(vite.middlewares);
-
-    // Fallback handler for SPA routes
-    app.use("*", async (req, res, next) => {
+    // Use Vite's middleware for all non-API routes
+    app.use((req, res, next) => {
       if (req.originalUrl.startsWith("/api")) {
         return next();
       }
-      
-      try {
-        const templatePath = path.resolve(process.cwd(), "client", "index.html");
-        let template = fs.readFileSync(templatePath, "utf-8");
-        const html = await vite.transformIndexHtml(req.originalUrl, template);
-        res.status(200).set({ "Content-Type": "text/html" }).end(html);
-      } catch (e: any) {
-        vite.ssrFixStacktrace(e);
-        next(e);
+      vite.middlewares(req, res, next);
+    });
+
+    // Serve index.html for all non-API routes that aren't handled by Vite
+    app.use("*", (req, res) => {
+      if (req.originalUrl.startsWith("/api")) {
+        return res.status(404).json({ message: "API endpoint not found" });
       }
+      
+      const indexPath = path.resolve(process.cwd(), "client", "index.html");
+      res.sendFile(indexPath);
     });
 
     // Start server on port 5000
@@ -87,7 +86,7 @@ async function startServer() {
       port: Number(port),
       host: "0.0.0.0",
     }, () => {
-      log(`HabitFlow running on port ${port}`);
+      console.log(`HabitFlow running on port ${port}`);
     });
 
     return server;

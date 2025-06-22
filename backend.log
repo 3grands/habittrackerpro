@@ -1,0 +1,4 @@
+9:20:13 PM [express] Checking API key availability...
+9:20:13 PM [express] ⚠️  Some API keys not available: Validation failed for: Stripe, OpenAI
+9:20:13 PM [express] Core app will work, but some features may be limited.
+9:20:13 PM [express] serving on port 5000

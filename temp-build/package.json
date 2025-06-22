@@ -1,4 +1,2 @@
-{
-  "type": "module",
-  "dependencies": {}
-}
+-  "type": "module",
++  "type": "commonjs",

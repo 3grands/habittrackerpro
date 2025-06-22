@@ -1,95 +1,53 @@
-import express, { type Express } from "express";
-import fs from "fs";
-import path from "path";
-import { type Server } from "http";
-import { nanoid } from "nanoid";
+import express, { type Express } from "express"
+import fs from "fs"
+import path from "path"
+import { createServer as createViteServer, createLogger } from "vite"
+import { nanoid } from "nanoid"
 
-// Simple logger for requests and errors
+const viteLogger = createLogger()
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     second: "2-digit",
-    hour12: true,
-  });
-  console.log(`${formattedTime} [${source}] ${message}`);
+    hour12: true
+  })
+  console.log(`${formattedTime} [${source}] ${message}`)
 }
 
-// Setup Vite dev middleware in development only
-export async function setupVite(app: Express, server?: Server) {
-  if (process.env.NODE_ENV === "production") return;
+export async function setupVite(app: Express, server: any) {
+  if (process.env.NODE_ENV === "production") return
 
-  // Dynamically import Vite so it isn't included in production bundle
-  const { createServer: createViteServer, createLogger } = await import("vite");
-  const { default: viteConfig } = await import("../vite.config.js");
-
-  const viteLogger = createLogger();
-  // Create Vite server in middleware mode
   const vite = await createViteServer({
-    ...viteConfig,
+    server: { middlewareMode: true, hmr: { server }, allowedHosts: true },
     configFile: false,
-    server: {
-      middlewareMode: true,
-      hmr: server ? { server } : undefined,
-      watch: {
-        usePolling: true,
-      },
-      fs: {
-        allow: [process.cwd()],
-      },
-    },
-    appType: "custom",
     customLogger: {
       ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
+      error: (msg, opts) => {
+        viteLogger.error(msg, opts)
+        process.exit(1)
+      }
     },
-  });
+    appType: "custom"
+  })
 
-  // Use Vite's middleware
-  app.use(vite.middlewares);
-
-  // Serve index.html on all unmatched routes via Vite
+  app.use(vite.middlewares)
   app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
     try {
-      const templatePath = path.resolve(
-        new URL(import.meta.url).pathname,
-        "..",
-        "client",
-        "index.html"
-      );
-      let template = await fs.promises.readFile(templatePath, "utf-8");
-      // Cache-bust main.js during dev
+      // point at the root index.html now
+      const templatePath = path.resolve(process.cwd(), "index.html")
+      let template = await fs.promises.readFile(templatePath, "utf-8")
+      // cache-busting if you like:
       template = template.replace(
-        `src=\"/src/main.tsx\"`,
-        `src=\"/src/main.tsx?v=${nanoid()}\"`
-      );
-      const html = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(html);
-    } catch (e: any) {
-      vite.ssrFixStacktrace(e);
-      next(e);
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      )
+      const html = await vite.transformIndexHtml(req.originalUrl, template)
+      res.status(200).set({ "Content-Type": "text/html" }).end(html)
+    } catch (e) {
+      vite.ssrFixStacktrace(e as Error)
+      next(e)
     }
-  });
-}
-
-// Serve built static files in production
-export function serveStatic(app: Express) {
-  const distPath = path.resolve(new URL(import.meta.url).pathname, "..", "public");
-
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
-  }
-
-  app.use(express.static(distPath));
-
-  // Fall through to index.html for SPA
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
+  })
 }
